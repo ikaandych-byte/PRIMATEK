@@ -1,0 +1,6 @@
+{
+  "name": "PT. PRIMA TEKNIK TRADA - Precision Machinery & Automation Showcase",
+  "description": "Showcase catalog and quotation portal for PT. PRIMA TEKNIK TRADA (www.ptt-id.com) featuring technical machine specs, interactive catalog, automation systems, dies & moulds, jigs & fixtures, and RFQ direct inquiries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
