@@ -5,7 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/', // <--- Penyesuaian ditambahkan di sini agar aset terbaca di root domain pttid.com
+    base: '/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
