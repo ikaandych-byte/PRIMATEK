@@ -2,6 +2,8 @@ import React from 'react';
 import { COMPANY_INFO } from '../data/company';
 import { MapPin, Phone, Mail, Globe, ArrowUp } from 'lucide-react';
 import { AppPage } from './Navbar';
+import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface FooterProps {
   onSelectPage: (page: AppPage) => void;
@@ -9,6 +11,10 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
+  const { theme } = useTheme();
+  const { language, t } = useLanguage();
+  const isDark = theme === 'dark';
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -19,15 +25,21 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
   };
 
   return (
-    <footer className="bg-neutral-950 border-t border-neutral-800 text-neutral-400 text-xs">
+    <footer
+      className={`border-t text-xs transition-colors duration-300 ${
+        isDark
+          ? 'bg-[#06080c] border-neutral-800/90 text-neutral-400'
+          : 'bg-[#0b0f19] border-slate-800 text-slate-300'
+      }`}
+    >
       {/* Main Footer Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10">
           
           {/* Brand Info (2 cols) */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-display font-black text-amber-500 text-sm">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-display font-black text-amber-400 text-sm">
                 PTT
               </div>
               <span className="font-display font-bold text-base text-white tracking-tight">
@@ -36,13 +48,15 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
             </div>
             
             <p className="text-neutral-400 leading-relaxed text-xs max-w-sm">
-              Your reliable sourcing for Customized Machine &amp; Automation System – Precision Parts, Jig &amp; Fixture – Dies &amp; Molds – Parts Mass Production. Beroperasi sejak 1999 di MM2100 Cibitung, Indonesia.
+              {language === 'en'
+                ? 'Your reliable sourcing for Customized Machine & Automation Systems, Precision Parts, Jig & Fixtures, Dies & Molds, and Mass Production. Serving tier-1 automotive and global manufacturers since 1999 from MM2100 Cibitung, Indonesia.'
+                : 'Your reliable sourcing for Customized Machine & Automation System – Precision Parts, Jig & Fixture – Dies & Molds – Parts Mass Production. Beroperasi sejak 1999 di MM2100 Cibitung, Indonesia.'}
             </p>
 
             <div className="pt-2 flex flex-col space-y-2 text-neutral-300 font-mono text-[11px]">
               <div className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                <span>{COMPANY_INFO.address}</span>
+                <span>{language === 'en' ? COMPANY_INFO.addressEn : COMPANY_INFO.address}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -59,10 +73,10 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
             </div>
           </div>
 
-          {/* Nav Links Column 1: Katalog */}
+          {/* Nav Links Column 1: Catalog */}
           <div className="space-y-3">
             <h4 className="text-white font-semibold font-display tracking-tight text-sm">
-              Katalog &amp; Spesifikasi
+              {language === 'en' ? 'Catalog & Specs' : 'Katalog & Spesifikasi'}
             </h4>
             <ul className="space-y-2">
               <li>
@@ -78,7 +92,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
                   onClick={() => handlePageClick('katalog')}
                   className="hover:text-amber-400 transition-colors text-left cursor-pointer"
                 >
-                  Jig &amp; Fixture Presisi
+                  {language === 'en' ? 'Precision Jig & Fixture' : 'Jig & Fixture Presisi'}
                 </button>
               </li>
               <li>
@@ -86,7 +100,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
                   onClick={() => handlePageClick('katalog')}
                   className="hover:text-amber-400 transition-colors text-left cursor-pointer"
                 >
-                  Dies &amp; Moulds Stamping
+                  {language === 'en' ? 'Stamping Dies & Moulds' : 'Dies & Moulds Stamping'}
                 </button>
               </li>
               <li>
@@ -94,7 +108,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
                   onClick={() => handlePageClick('katalog')}
                   className="hover:text-amber-400 transition-colors text-left cursor-pointer"
                 >
-                  Parts Mass Production
+                  {language === 'en' ? 'Mass Production Parts' : 'Parts Mass Production'}
                 </button>
               </li>
               <li>
@@ -102,16 +116,16 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
                   onClick={() => handlePageClick('katalog')}
                   className="hover:text-amber-400 transition-colors text-left cursor-pointer"
                 >
-                  Spesifikasi Teknis Mesin
+                  {language === 'en' ? 'Technical Machine Specs' : 'Spesifikasi Teknis Mesin'}
                 </button>
               </li>
             </ul>
           </div>
 
-          {/* Nav Links Column 2: Perusahaan */}
+          {/* Nav Links Column 2: Company */}
           <div className="space-y-3">
             <h4 className="text-white font-semibold font-display tracking-tight text-sm">
-              Perusahaan &amp; Pabrik
+              {language === 'en' ? 'Company & Plant' : 'Perusahaan & Pabrik'}
             </h4>
             <ul className="space-y-2">
               <li>
@@ -119,7 +133,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
                   onClick={() => handlePageClick('tentang')}
                   className="hover:text-amber-400 transition-colors text-left cursor-pointer"
                 >
-                  Profil &amp; Sejarah Sejak 1999
+                  {language === 'en' ? 'Profile & History Since 1999' : 'Profil & Sejarah Sejak 1999'}
                 </button>
               </li>
               <li>
@@ -127,7 +141,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
                   onClick={() => handlePageClick('fasilitas')}
                   className="hover:text-amber-400 transition-colors text-left cursor-pointer"
                 >
-                  Fasilitas Pabrik MM2100 Cibitung
+                  {language === 'en' ? 'MM2100 Cibitung Plant Facilities' : 'Fasilitas Pabrik MM2100 Cibitung'}
                 </button>
               </li>
               <li>
@@ -135,7 +149,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
                   onClick={() => handlePageClick('beranda')}
                   className="hover:text-amber-400 transition-colors text-left cursor-pointer"
                 >
-                  Klien Otomotif &amp; Mitra Robotik
+                  {language === 'en' ? 'Automotive Clients & Robotics Partners' : 'Klien Otomotif & Mitra Robotik'}
                 </button>
               </li>
               <li>
@@ -143,7 +157,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
                   onClick={() => handlePageClick('tentang')}
                   className="hover:text-amber-400 transition-colors text-left cursor-pointer"
                 >
-                  Kontak, Lokasi &amp; Peta Pabrik
+                  {language === 'en' ? 'Contact, Location & Plant Map' : 'Kontak, Lokasi & Peta Pabrik'}
                 </button>
               </li>
               <li>
@@ -151,24 +165,24 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
                   onClick={onOpenRfq}
                   className="text-amber-400 font-semibold hover:underline cursor-pointer"
                 >
-                  Permintaan Penawaran (RFQ)
+                  {language === 'en' ? 'Request for Quotation (RFQ)' : 'Permintaan Penawaran (RFQ)'}
                 </button>
               </li>
             </ul>
           </div>
 
-          {/* Nav Links Column 3: Legal & Credentials */}
+          {/* Nav Links Column 3: Quality Credentials */}
           <div className="space-y-3">
             <h4 className="text-white font-semibold font-display tracking-tight text-sm">
-              Standarisasi Mutu
+              {language === 'en' ? 'Quality Standards' : 'Standarisasi Mutu'}
             </h4>
-            <div className="p-3.5 rounded-xl bg-neutral-900 border border-neutral-800 space-y-2 text-xs">
+            <div className="p-3.5 rounded-xl bg-black/40 border border-neutral-800 space-y-2 text-xs">
               <div className="text-white font-bold font-display">ISO 9001:2015</div>
               <div className="text-[11px] text-neutral-400 font-mono">
-                No. Sertifikat: MD/PTT954
+                {language === 'en' ? 'Certificate No: ' : 'No. Sertifikat: '}MD/PTT954
               </div>
               <div className="text-[11px] text-neutral-500 font-mono">
-                Akreditasi: IDCAB MANDALA
+                {language === 'en' ? 'Accreditation: ' : 'Akreditasi: '}IDCAB MANDALA
               </div>
               <div className="pt-1 text-[11px] text-neutral-400 font-mono">
                 NIB: {COMPANY_INFO.nib}
@@ -181,14 +195,14 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
         {/* Bottom Row */}
         <div className="mt-12 pt-8 border-t border-neutral-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-neutral-500">
           <div>
-            &copy; {new Date().getFullYear()} {COMPANY_INFO.name}. Hak Cipta Dilindungi Undang-Undang.
+            &copy; {new Date().getFullYear()} {COMPANY_INFO.name}. {language === 'en' ? 'All Rights Reserved.' : 'Hak Cipta Dilindungi Undang-Undang.'}
           </div>
           <div className="flex items-center gap-4">
-            <span>Situs Resmi: www.ptt-id.com / www.pttid.com</span>
+            <span>{language === 'en' ? 'Official Sites: ' : 'Situs Resmi: '}www.pttid.com</span>
             <button
               onClick={scrollToTop}
               className="p-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors cursor-pointer"
-              title="Kembali ke atas"
+              title={language === 'en' ? 'Back to top' : 'Kembali ke atas'}
             >
               <ArrowUp className="w-3.5 h-3.5" />
             </button>

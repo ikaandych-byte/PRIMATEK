@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --font-heading: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -9,8 +11,19 @@
 
   body {
     font-family: var(--font-body);
-    background-color: #0a0a0a;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  /* Dark mode default body */
+  html.dark body {
+    background-color: #080a0f;
     color: #f5f5f5;
+  }
+
+  /* Light mode body */
+  html.light body {
+    background-color: #f8fafc;
+    color: #0f172a;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -27,7 +40,7 @@
   }
 }
 
-/* Precision Tech Grid Pattern */
+/* Precision Tech Grid Pattern for Dark and Light */
 .bg-tech-grid {
   background-size: 40px 40px;
   background-image: 
@@ -35,8 +48,19 @@
     linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
 }
 
+.light .bg-tech-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.05) 1px, transparent 1px);
+}
+
 .bg-radial-gradient {
   background: radial-gradient(circle at 50% 30%, rgba(245, 158, 11, 0.08) 0%, rgba(10, 10, 10, 0) 70%);
+}
+
+.light .bg-radial-gradient {
+  background: radial-gradient(circle at 50% 30%, rgba(245, 158, 11, 0.12) 0%, rgba(255, 255, 255, 0) 70%);
 }
 
 /* Subtle Industrial Scanline */
@@ -87,21 +111,34 @@
   animation: fadeSlideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Custom Scrollbar for Catalog & Modals */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
 }
 
-::-webkit-scrollbar-track {
-  background: #121212;
+.dark ::-webkit-scrollbar-track {
+  background: #0e121a;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
+.dark ::-webkit-scrollbar-thumb {
+  background: #252d3d;
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #384358;
+}
+
+.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }

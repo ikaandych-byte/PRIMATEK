@@ -6,14 +6,14 @@ import {
   VolumeX,
   ArrowRight,
   ShieldCheck,
-  Factory,
   Award,
-  Target,
-  Sparkles,
   Layers,
 } from 'lucide-react';
 import heroPoster from '../assets/images/hero_industrial_automation_1790239853481.jpg';
-import { COMPANY_INFO, CLIENT_LOGOS, TECHNICAL_PARTNERS } from '../data/company';
+import { COMPANY_INFO } from '../data/company';
+import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { getLocalizedCategories } from '../utils/localizedData';
 
 interface HeroVideoProps {
   onExploreCatalog: () => void;
@@ -24,13 +24,15 @@ interface HeroVideoProps {
 const VIDEO_CLIPS = [
   {
     id: 'industrial-robotics',
-    title: 'Automated Robotics & Machining',
+    titleEn: 'Automated Robotics & Machining',
+    titleId: 'Robotika Industri & Permesinan',
     url: 'https://cdn.coverr.co/videos/coverr-robotic-arm-working-in-a-factory-6782/1080p.mp4',
     altUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
   },
   {
     id: 'cnc-manufacturing',
-    title: 'Precision CNC Machining',
+    titleEn: 'Precision CNC Machining',
+    titleId: 'Pemesinan Presisi CNC',
     url: 'https://cdn.coverr.co/videos/coverr-automated-machinery-operating-5683/1080p.mp4',
     altUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
   },
@@ -41,6 +43,10 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
   onOpenRfq,
   onSelectCategory,
 }) => {
+  const { theme } = useTheme();
+  const { language, t } = useLanguage();
+  const isDark = theme === 'dark';
+
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [activeClipIndex, setActiveClipIndex] = useState(0);
@@ -75,15 +81,8 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
     }
   };
 
-  const categories = [
-    { id: 'automation', label: 'Automation & Custom Machines', count: '3 Sistem' },
-    { id: 'jig-fixture', label: 'Jig – Fixture – Precision', count: 'Sub-Mikron' },
-    { id: 'dies-moulds', label: 'Dies & Moulds Heavy Duty', count: '110T – 250T' },
-    { id: 'mass-production', label: 'Parts Mass Production', count: 'Press & Lathe' },
-    { id: 'facility-tools', label: 'Armada Mesin & CMM', count: 'Double Column' },
-  ];
+  const categories = getLocalizedCategories(language).filter((c) => c.id !== 'all');
 
-  // Selected marquee items from clients and partners
   const marqueeItems = [
     'Astra Daihatsu Motor',
     'Astra Honda Motor (AHM)',
@@ -100,134 +99,280 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
   return (
     <section
       id="hero"
-      className="pt-24 sm:pt-28 md:pt-32 pb-14 sm:pb-16 relative overflow-hidden bg-neutral-950 border-b border-neutral-800/80"
+      className={`pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 relative overflow-hidden border-b transition-colors duration-300 ${
+        isDark
+          ? 'bg-[#080a0f] border-neutral-800/80'
+          : 'bg-slate-100 border-slate-200'
+      }`}
     >
-      {/* Background Accent Gradients & Grid Pattern (Clean Industrial Theme, No Human Silhouette) */}
-      <div className="absolute inset-0 bg-radial-gradient opacity-60 pointer-events-none" />
-      <div className="absolute -top-32 left-1/4 w-[480px] h-[480px] bg-amber-500/10 rounded-full blur-[130px] pointer-events-none" />
-      <div className="absolute top-1/3 -right-28 w-[420px] h-[420px] bg-amber-600/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:36px_36px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none" />
+      {/* 1. Hero Background Facility & Machinery Image (Always clearly visible in both light & dark modes) */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+        <img
+          src={heroPoster}
+          alt="PT. PRIMA TEKNIK TRADA Industrial Machinery & Robotics Facility"
+          className={`w-full h-full object-cover object-center scale-100 sm:scale-105 transition-all duration-700 ${
+            isDark
+              ? 'opacity-70 brightness-95 contrast-110 saturate-[1.15]'
+              : 'opacity-65 brightness-100 contrast-105 saturate-[1.1]'
+          }`}
+        />
 
-      {/* Ambient Real Factory Machinery Video Layer */}
-      <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none opacity-20 mix-blend-screen">
-        {!videoError ? (
+        {/* Ambient Real Factory Machinery Video Layer (Overlaid smoothly when playing) */}
+        {!videoError && isPlaying && activeClipIndex >= 0 && (
           <video
             ref={videoRef}
-            key={VIDEO_CLIPS[activeClipIndex].url}
+            key={VIDEO_CLIPS[activeClipIndex]?.url || VIDEO_CLIPS[0].url}
             autoPlay
             loop
-            muted
+            muted={isMuted}
             playsInline
             onError={() => setVideoError(true)}
-            className="w-full h-full object-cover scale-105 transition-opacity duration-1000"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+              isDark ? 'opacity-30 mix-blend-screen' : 'opacity-20 mix-blend-multiply'
+            }`}
           >
-            <source src={VIDEO_CLIPS[activeClipIndex].url} type="video/mp4" />
-            <source src={VIDEO_CLIPS[activeClipIndex].altUrl} type="video/mp4" />
+            <source src={VIDEO_CLIPS[activeClipIndex]?.url || VIDEO_CLIPS[0].url} type="video/mp4" />
+            <source src={VIDEO_CLIPS[activeClipIndex]?.altUrl || VIDEO_CLIPS[0].altUrl} type="video/mp4" />
           </video>
-        ) : (
-          <img
-            src={heroPoster}
-            alt="PT Prima Teknik Trada Facility MM2100"
-            className="w-full h-full object-cover scale-105"
-          />
         )}
-        <div className="absolute inset-0 bg-neutral-950/70" />
+
+        {/* Readability Vignette Gradient: Keeps left headline readable while letting right machinery shine through clearly */}
+        <div
+          className={`absolute inset-0 transition-colors duration-300 ${
+            isDark
+              ? 'bg-gradient-to-r from-[#080a0f]/92 via-[#080a0f]/75 to-[#080a0f]/45'
+              : 'bg-gradient-to-r from-slate-100/92 via-white/80 to-slate-100/50'
+          }`}
+        />
+
+        {/* Vertical Transition Gradient */}
+        <div
+          className={`absolute inset-0 transition-colors duration-300 ${
+            isDark
+              ? 'bg-gradient-to-b from-[#080a0f]/75 via-transparent to-[#080a0f]/90'
+              : 'bg-gradient-to-b from-white/70 via-transparent to-slate-100/85'
+          }`}
+        />
       </div>
 
-      {/* Main Grid Container */}
-      <div className="lg:px-8 md:mt-4 md:mb-12 sm:px-6 max-w-7xl mx-auto pr-4 pl-4 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+      {/* 2. Soft Ambient Glowing Accents */}
+      <div
+        className={`absolute -top-32 left-1/4 w-[480px] h-[480px] rounded-full blur-[140px] pointer-events-none ${
+          isDark ? 'bg-amber-500/15' : 'bg-amber-400/15'
+        }`}
+      />
+      <div
+        className={`absolute top-1/3 -right-28 w-[420px] h-[420px] rounded-full blur-[150px] pointer-events-none ${
+          isDark ? 'bg-amber-600/10' : 'bg-amber-500/10'
+        }`}
+      />
+      
+      {/* 3. Subtle Tech Grid Pattern (accented so it doesn't obscure the machinery) */}
+      <div
+        className="absolute inset-0 bg-tech-grid [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none opacity-20"
+      />
+
+      {/* Main Grid Container - Optimized for HP, Tablet, PC */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           
-          {/* Left Content (lg:col-span-7) */}
+          {/* Left Content (Mobile, Tablet, Desktop) */}
           <div className="lg:col-span-7 space-y-4 sm:space-y-5 text-left">
             
-            {/* Top Pill Badge */}
+            {/* Top Badge */}
             <div className="animate-fade-slide">
-              <div className="inline-flex bg-neutral-900/90 border border-neutral-700/80 rounded-full py-1.5 px-3 sm:px-4 backdrop-blur-md gap-x-2 sm:gap-x-2.5 items-center shadow-lg">
-                <span className="text-[10px] sm:text-xs tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 font-mono text-neutral-300">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                  {COMPANY_INFO.iso}
-                  <Award className="w-3.5 h-3.5 text-amber-400" />
+              <div
+                className={`inline-flex rounded-full py-1.5 px-3 sm:px-4 backdrop-blur-md gap-x-2 sm:gap-x-2.5 items-center shadow-sm border transition-colors ${
+                  isDark
+                    ? 'bg-neutral-900/90 border-neutral-700/80 text-neutral-300'
+                    : 'bg-white/95 border-slate-300 text-slate-800 shadow-slate-200/50'
+                }`}
+              >
+                <span className="text-[10px] sm:text-xs tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 font-mono">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  {t.hero.isoBadge}
+                  <Award className="w-3.5 h-3.5 text-amber-500" />
                 </span>
-                <span className="text-neutral-600">|</span>
-                <span className="text-[10px] sm:text-xs text-amber-400 font-mono font-medium">MM2100 CIBITUNG</span>
+                <span className={isDark ? 'text-neutral-600' : 'text-slate-300'}>|</span>
+                <span className={`text-[10px] sm:text-xs font-mono font-semibold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                  {t.hero.locationBadge}
+                </span>
               </div>
             </div>
 
-            {/* Main Headline (Scaled down appropriately to not dominate) */}
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.65rem] xl:text-[2.9rem] leading-[1.18] font-extrabold tracking-tight font-display text-white">
-              Presisi Mesin Industri &amp;{' '}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-amber-400 to-amber-200">
-                Sistem Otomasi Robotik
+            {/* Main Headline - Responsive Typographic Scale */}
+            <h1
+              className={`text-2xl sm:text-3xl md:text-4xl lg:text-[2.65rem] xl:text-[2.9rem] leading-[1.18] font-extrabold tracking-tight font-display transition-colors ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}
+            >
+              {t.hero.headlinePart1}
+              <span
+                className={`bg-clip-text text-transparent ${
+                  isDark
+                    ? 'bg-gradient-to-r from-amber-300 via-amber-400 to-amber-200'
+                    : 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600'
+                }`}
+              >
+                {t.hero.headlineHighlight}
               </span>{' '}
-              Taraf Pabrikan Global
+              {t.hero.headlinePart2}
             </h1>
 
             {/* Description */}
-            <p className="text-sm sm:text-base text-neutral-300 max-w-xl font-sans leading-relaxed">
-              Mitra manufaktur rekayasa teknik terkemuka di Kawasan Industri MM2100 Cibitung sejak 1999.
-              Menyediakan solusi terpadu <strong className="text-white font-semibold">Customized Machines</strong>,{' '}
-              <strong className="text-white font-semibold">Jig &amp; Fixture</strong>,{' '}
-              <strong className="text-white font-semibold">Dies &amp; Moulds</strong>, hingga{' '}
-              <strong className="text-white font-semibold">Produksi Massal Stamping &amp; Machining</strong>.
+            <p
+              className={`text-xs sm:text-sm md:text-base max-w-xl font-sans leading-relaxed transition-colors ${
+                isDark ? 'text-neutral-300' : 'text-slate-700 font-normal'
+              }`}
+            >
+              {t.hero.subheadlinePrefix}{' '}
+              {language === 'en' ? (
+                <>
+                  Delivering integrated turnkey solutions:{' '}
+                  <strong className={isDark ? 'text-white font-semibold' : 'text-slate-900 font-bold'}>
+                    Customized Machines
+                  </strong>
+                  ,{' '}
+                  <strong className={isDark ? 'text-white font-semibold' : 'text-slate-900 font-bold'}>
+                    Precision Jig &amp; Fixture
+                  </strong>
+                  ,{' '}
+                  <strong className={isDark ? 'text-white font-semibold' : 'text-slate-900 font-bold'}>
+                    Dies &amp; Moulds
+                  </strong>
+                  , through to{' '}
+                  <strong className={isDark ? 'text-white font-semibold' : 'text-slate-900 font-bold'}>
+                    Mass Production Stamping &amp; Machining
+                  </strong>
+                  .
+                </>
+              ) : (
+                <>
+                  Menyediakan solusi terpadu{' '}
+                  <strong className={isDark ? 'text-white font-semibold' : 'text-slate-900 font-bold'}>
+                    Customized Machines
+                  </strong>
+                  ,{' '}
+                  <strong className={isDark ? 'text-white font-semibold' : 'text-slate-900 font-bold'}>
+                    Jig &amp; Fixture
+                  </strong>
+                  ,{' '}
+                  <strong className={isDark ? 'text-white font-semibold' : 'text-slate-900 font-bold'}>
+                    Dies &amp; Moulds
+                  </strong>
+                  , hingga{' '}
+                  <strong className={isDark ? 'text-white font-semibold' : 'text-slate-900 font-bold'}>
+                    Produksi Massal Stamping &amp; Machining
+                  </strong>
+                  .
+                </>
+              )}
             </p>
 
-            {/* CTA Buttons Row */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-3.5 pt-1">
+            {/* CTA Buttons Row - Mobile Stacks, Tablet/PC Row */}
+            <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3.5 pt-1">
               <button
                 onClick={onOpenRfq}
                 className="group inline-flex transition-all duration-300 hover:shadow-lg hover:bg-amber-300 active:scale-98 text-xs sm:text-sm font-bold text-neutral-950 bg-amber-400 rounded-xl py-3 px-5 sm:px-6 shadow-md shadow-amber-500/20 gap-x-2 items-center justify-center cursor-pointer"
               >
-                <span>Minta Penawaran Harga (RFQ)</span>
+                <span>{t.hero.rfqCta}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
 
               <button
                 onClick={onExploreCatalog}
-                className="group inline-flex hover:text-white transition-all duration-300 hover:border-neutral-600 hover:bg-neutral-800/80 text-xs sm:text-sm font-semibold text-neutral-200 border border-neutral-700 bg-neutral-900/90 rounded-xl py-3 px-5 sm:px-6 gap-x-2 items-center justify-center cursor-pointer"
+                className={`group inline-flex transition-all duration-300 text-xs sm:text-sm font-semibold rounded-xl py-3 px-5 sm:px-6 gap-x-2 items-center justify-center cursor-pointer border ${
+                  isDark
+                    ? 'hover:text-white hover:border-neutral-600 hover:bg-neutral-800/80 text-neutral-200 border-neutral-700 bg-neutral-900/90'
+                    : 'hover:text-slate-950 hover:border-slate-400 hover:bg-slate-100 text-slate-800 border-slate-300 bg-white shadow-xs'
+                }`}
               >
-                <Layers className="w-4 h-4 text-amber-400" />
-                <span>Lihat Katalog Produk &amp; Mesin</span>
+                <Layers className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                <span>{t.hero.catalogCta}</span>
               </button>
             </div>
 
-            {/* Video Background Control Bar */}
-            <div className="pt-3 flex flex-wrap items-center gap-3 text-xs text-neutral-400">
-              <span className="text-neutral-500 font-mono text-[11px] uppercase tracking-wider">
-                Latar Video:
+            {/* Video Controls & Mode Indicator */}
+            <div
+              className={`pt-2 flex flex-wrap items-center gap-2.5 text-xs ${
+                isDark ? 'text-neutral-300' : 'text-slate-700'
+              }`}
+            >
+              <span className="font-mono text-[11px] uppercase tracking-wider font-semibold">
+                {t.hero.videoBgLabel}
               </span>
-              <div className="inline-flex items-center bg-white/5 border border-white/10 rounded-full p-1 gap-1 backdrop-blur-md">
+              <div
+                className={`inline-flex items-center rounded-full p-1 gap-1 backdrop-blur-md border ${
+                  isDark ? 'bg-neutral-900/85 border-neutral-700/80' : 'bg-slate-200/80 border-slate-300'
+                }`}
+              >
                 {VIDEO_CLIPS.map((clip, idx) => (
                   <button
                     key={clip.id}
                     onClick={() => switchVideo(idx)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                      activeClipIndex === idx
-                        ? 'bg-amber-400/25 text-amber-300 border border-amber-400/40'
-                        : 'text-neutral-400 hover:text-white'
+                    className={`px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-medium transition-colors cursor-pointer ${
+                      activeClipIndex === idx && isPlaying
+                        ? isDark
+                          ? 'bg-amber-400 text-neutral-950 font-bold shadow-xs'
+                          : 'bg-amber-500 text-white font-semibold shadow-xs'
+                        : isDark
+                          ? 'text-neutral-300 hover:text-white'
+                          : 'text-slate-700 hover:text-slate-900'
                     }`}
                   >
-                    {clip.title}
+                    {language === 'en' ? clip.titleEn : clip.titleId}
                   </button>
                 ))}
+
+                {/* HD Facility Photo Button */}
+                <button
+                  onClick={() => {
+                    setActiveClipIndex(-1);
+                    setIsPlaying(false);
+                    if (videoRef.current) {
+                      videoRef.current.pause();
+                    }
+                  }}
+                  className={`px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-medium transition-colors cursor-pointer ${
+                    activeClipIndex === -1 || !isPlaying
+                      ? isDark
+                        ? 'bg-amber-400 text-neutral-950 font-bold shadow-xs'
+                        : 'bg-amber-500 text-white font-semibold shadow-xs'
+                      : isDark
+                        ? 'text-neutral-300 hover:text-white'
+                        : 'text-slate-700 hover:text-slate-900'
+                  }`}
+                >
+                  {language === 'en' ? 'Facility Photo (HD)' : 'Foto Fasilitas (HD)'}
+                </button>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={togglePlay}
-                  className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 transition-colors"
-                  title={isPlaying ? 'Pause Background Video' : 'Play Background Video'}
-                >
-                  {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                </button>
-                <button
-                  onClick={toggleMute}
-                  className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 transition-colors"
-                  title={isMuted ? 'Unmute Video' : 'Mute Video'}
-                >
-                  {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                </button>
-              </div>
+              {activeClipIndex >= 0 && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={togglePlay}
+                    className={`p-1.5 rounded-full border transition-colors cursor-pointer ${
+                      isDark
+                        ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white border-neutral-700'
+                        : 'bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-300 shadow-xs'
+                    }`}
+                    title={isPlaying ? 'Pause Video' : 'Play Video'}
+                  >
+                    {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={toggleMute}
+                    className={`p-1.5 rounded-full border transition-colors cursor-pointer ${
+                      isDark
+                        ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white border-neutral-700'
+                        : 'bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-300 shadow-xs'
+                    }`}
+                    title={isMuted ? 'Unmute Video' : 'Mute Video'}
+                  >
+                    {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>
@@ -237,114 +382,150 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
             
             {/* Top Card: Plant MM2100 Stats & Verified Metrics */}
             <div
-              className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-gradient-to-br from-white/10 via-white/0 to-white/10 w-full h-fit rounded-2xl sm:rounded-3xl relative border border-white/15 shadow-[2.8px_2.8px_2.2px_rgba(0,_0,_0,_0.034),_6.7px_6.7px_5.3px_rgba(0,_0,_0,_0.048),_12.5px_12.5px_10px_rgba(0,_0,_0,_0.06),_22.3px_22.3px_17.9px_rgba(0,_0,_0,_0.072),_41.8px_41.8px_33.4px_rgba(0,_0,_0,_0.086),_100px_100px_80px_rgba(0,_0,_0,_0.12)]"
-              style={{ backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}
+              className={`overflow-hidden transition-all duration-300 w-full h-fit rounded-2xl sm:rounded-3xl relative border shadow-xl ${
+                isDark
+                  ? 'bg-neutral-900/85 border-neutral-700/80 backdrop-blur-md'
+                  : 'bg-white/95 border-slate-200/90 shadow-slate-200 backdrop-blur-md'
+              }`}
             >
-              <div className="pt-6 sm:pt-8 pr-6 sm:pr-8 pb-6 sm:pb-8 pl-6 sm:pl-8 relative text-left">
+              <div className="p-5 sm:p-7 relative text-left">
                 
-                {/* Header with Target/Factory Icon */}
-                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ring-1 flex items-center justify-center bg-white/10 ring-white/20 text-white shrink-0">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
-                      role="img"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      className="text-white sm:w-6 sm:h-6"
-                    >
-                      <path
-                        fill="currentColor"
-                        d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2s10 4.477 10 10"
-                        opacity=".5"
-                      />
-                      <path
-                        fill="currentColor"
-                        d="M9.25 12a.75.75 0 0 1 .75-.75h1.25V10a.75.75 0 0 1 1.5 0v1.25H14a.75.75 0 0 1 0 1.5h-1.25V14a.75.75 0 0 1-1.5 0v-1.25H10a.75.75 0 0 1-.75-.75m-7.222.75a10 10 0 0 1 0-1.5H5a.75.75 0 0 1 0 1.5zm10.722 9.222a10 10 0 0 1-1.5 0V19a.75.75 0 0 1 1.5 0zm9.222-10.722a10 10 0 0 1 0 1.5H19a.75.75 0 0 1 0-1.5zM12.75 2.028V5a.75.75 0 0 1-1.5 0V2.028a10 10 0 0 1 1.5 0"
-                      />
-                    </svg>
+                {/* Header with Factory Badge */}
+                <div className="flex items-center gap-3 mb-4 sm:mb-5">
+                  <div
+                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 border ${
+                      isDark
+                        ? 'bg-amber-400/10 border-amber-400/30 text-amber-400'
+                        : 'bg-amber-50 border-amber-300 text-amber-600'
+                    }`}
+                  >
+                    <Award className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <div className="text-2xl sm:text-3xl tracking-tighter font-manrope font-medium text-white">
-                      25+ Tahun
+                    <div
+                      className={`text-xl sm:text-2xl tracking-tight font-display font-bold ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}
+                    >
+                      {t.hero.experienceYears}
                     </div>
-                    <div className="text-xs sm:text-sm text-white/70 font-sans">
-                      Pabrik MM2100 Cibitung, Bekasi
+                    <div className={`text-xs sm:text-sm ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
+                      {t.hero.experienceSub}
                     </div>
                   </div>
                 </div>
 
                 {/* ISO Standard Progress Meter */}
-                <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
-                  <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="text-white/70 font-sans">Standar Mutu ISO 9001:2015</span>
-                    <span className="text-white font-mono font-semibold">100% Terverifikasi</span>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={isDark ? 'text-neutral-300' : 'text-slate-600'}>
+                      {language === 'en' ? 'Quality Standard ISO 9001:2015' : 'Standar Mutu ISO 9001:2015'}
+                    </span>
+                    <span className={`font-mono font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                      {t.hero.isoVerified}
+                    </span>
                   </div>
-                  <div className="h-1.5 sm:h-2 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className={`h-2 rounded-full overflow-hidden ${isDark ? 'bg-neutral-800' : 'bg-slate-200'}`}>
                     <div
-                      className="h-full bg-gradient-to-r rounded-full from-amber-400 via-amber-200 to-white"
+                      className="h-full bg-gradient-to-r rounded-full from-amber-500 via-amber-400 to-amber-300"
                       style={{ width: '100%' }}
                     />
                   </div>
                 </div>
 
-                {/* Divider Line */}
-                <div className="h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent my-3 sm:my-4" />
-
-                {/* Three Metrics with Dividers */}
-                <div className="flex justify-between mb-3 sm:mb-4 gap-2">
-                  <div className="text-center px-1 sm:px-2 cursor-pointer transition-all duration-300 rounded-xl sm:rounded-2xl hover:bg-white/5 hover:-translate-y-0.5 flex-1">
-                    <div className="text-xl sm:text-2xl leading-tight bg-gradient-to-r from-white/95 to-neutral-200/80 bg-clip-text text-transparent font-sans font-medium">
+                {/* Three Metrics Grid with Dividers */}
+                <div
+                  className={`grid grid-cols-3 gap-2 py-3 border-y my-3 ${
+                    isDark ? 'border-neutral-800/80' : 'border-slate-200'
+                  }`}
+                >
+                  <div className="text-center px-1">
+                    <div
+                      className={`text-lg sm:text-xl font-bold font-display ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}
+                    >
                       250T
                     </div>
-                    <div className="text-[10px] sm:text-xs opacity-70 uppercase tracking-wide font-sans text-neutral-300">
-                      Tonase Press
+                    <div className={`text-[10px] uppercase font-mono mt-0.5 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                      {t.hero.statPressTonnage}
                     </div>
                   </div>
-                  <div className="w-px h-10 sm:h-12 my-auto bg-gradient-to-b from-transparent via-white/40 to-transparent" />
-                  <div className="text-center px-1 sm:px-2 cursor-pointer transition-all duration-300 rounded-xl sm:rounded-2xl hover:bg-white/5 hover:-translate-y-0.5 flex-1">
-                    <div className="text-xl sm:text-2xl leading-tight bg-gradient-to-r from-white/95 to-neutral-200/80 bg-clip-text text-transparent font-sans font-medium">
+                  <div
+                    className={`text-center px-1 border-x ${
+                      isDark ? 'border-neutral-800/80' : 'border-slate-200'
+                    }`}
+                  >
+                    <div
+                      className={`text-lg sm:text-xl font-bold font-display ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}
+                    >
                       3.0m
                     </div>
-                    <div className="text-[10px] sm:text-xs opacity-70 uppercase tracking-wide font-sans text-neutral-300">
-                      Double Column
+                    <div className={`text-[10px] uppercase font-mono mt-0.5 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                      {t.hero.statDoubleColumn}
                     </div>
                   </div>
-                  <div className="w-px h-10 sm:h-12 my-auto bg-gradient-to-b from-transparent via-white/40 to-transparent" />
-                  <div className="text-center px-1 sm:px-2 cursor-pointer transition-all duration-300 rounded-xl sm:rounded-2xl hover:bg-white/5 hover:-translate-y-0.5 flex-1">
-                    <div className="text-xl sm:text-2xl leading-tight bg-gradient-to-r from-white/95 to-neutral-200/80 bg-clip-text text-transparent font-sans font-medium">
+                  <div className="text-center px-1">
+                    <div
+                      className={`text-lg sm:text-xl font-bold font-display ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}
+                    >
                       90+
                     </div>
-                    <div className="text-[10px] sm:text-xs opacity-70 uppercase tracking-wide font-sans text-neutral-300">
-                      Personil
+                    <div className={`text-[10px] uppercase font-mono mt-0.5 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                      {t.hero.statPersonnel}
                     </div>
                   </div>
                 </div>
 
                 {/* Bottom Tags */}
-                <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1">
-                  <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs px-2.5 py-1 rounded-full bg-white/10 border border-white/20 text-zinc-300 font-sans">
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    OPERATIONAL MM2100
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-[10px] sm:text-xs px-2.5 py-1 rounded-full border ${
+                      isDark
+                        ? 'bg-neutral-900/80 border-neutral-700/70 text-neutral-300'
+                        : 'bg-slate-100 border-slate-300 text-slate-700'
+                    }`}
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    {t.hero.tagOperational}
                   </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2.5 py-1 rounded-full bg-white/10 border border-white/20 text-zinc-300 font-sans">
-                    <Award className="w-3 h-3 text-amber-300" />
-                    CERTIFIED ISO
+                  <span
+                    className={`inline-flex items-center gap-1 text-[10px] sm:text-xs px-2.5 py-1 rounded-full border ${
+                      isDark
+                        ? 'bg-neutral-900/80 border-neutral-700/70 text-neutral-300'
+                        : 'bg-slate-100 border-slate-300 text-slate-700'
+                    }`}
+                  >
+                    <Award className="w-3 h-3 text-amber-500" />
+                    {t.hero.tagIso}
                   </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2.5 py-1 rounded-full bg-white/10 border border-white/20 text-zinc-300 font-sans">
-                    <ShieldCheck className="w-3 h-3 text-white" />
-                    LAHAN 2.806 m²
+                  <span
+                    className={`inline-flex items-center gap-1 text-[10px] sm:text-xs px-2.5 py-1 rounded-full border ${
+                      isDark
+                        ? 'bg-neutral-900/80 border-neutral-700/70 text-neutral-300'
+                        : 'bg-slate-100 border-slate-300 text-slate-700'
+                    }`}
+                  >
+                    <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                    {t.hero.tagLandArea}
                   </span>
                 </div>
 
                 {/* Fast RFQ Shortcut inside Card */}
-                <div className="mt-4 pt-3 border-t border-white/10">
+                <div className={`mt-4 pt-3 border-t ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
                   <button
                     onClick={onOpenRfq}
-                    className="w-full py-2 px-3 text-xs font-semibold text-amber-300 hover:text-white bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/30 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className={`w-full py-2 px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border ${
+                      isDark
+                        ? 'text-amber-300 hover:text-white bg-amber-400/10 hover:bg-amber-400/20 border-amber-400/30'
+                        : 'text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 border-amber-300'
+                    }`}
                   >
-                    <span>Kirim Gambar Teknik &amp; Permintaan Harga</span>
+                    <span>{t.hero.cardRfqShortcut}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -354,16 +535,23 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
 
             {/* Bottom Card: Featured Clients & Technical Partners Marquee */}
             <div
-              className="overflow-hidden transition-all duration-300 bg-gradient-to-br from-white/10 via-white/0 to-white/10 w-full h-fit rounded-2xl sm:rounded-3xl relative border border-white/15 shadow-[4px_4px_6px_rgba(0,_0,_0,_0.049),_9.6px_9.6px_7.6px_rgba(0,_0,_0,_0.069),_18px_18px_14.3px_rgba(0,_0,_0,_0.086),_32px_32px_25.6px_rgba(0,_0,_0,_0.103),_60px_60px_47.8px_rgba(0,_0,_0,_0.123),_143px_143px_114.3px_rgba(0,_0,_0,_0.172)]"
-              style={{ backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}
+              className={`overflow-hidden transition-all duration-300 w-full h-fit rounded-2xl sm:rounded-3xl relative border shadow-lg ${
+                isDark
+                  ? 'bg-neutral-900/85 border-neutral-700/80 backdrop-blur-md'
+                  : 'bg-white/95 border-slate-200/90 shadow-slate-200 backdrop-blur-md'
+              }`}
             >
-              <div className="pt-6 sm:pt-7 pr-6 sm:pr-8 pb-6 sm:pb-7 pl-6 sm:pl-8 relative text-left">
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <h3 className="text-base sm:text-lg font-sans text-white font-medium">
-                    Featured Clients &amp; Partners
+              <div className="p-5 sm:p-6 relative text-left">
+                <div className="flex items-center justify-between mb-3">
+                  <h3
+                    className={`text-sm sm:text-base font-bold font-display ${
+                      isDark ? 'text-white' : 'text-slate-900'
+                    }`}
+                  >
+                    {t.hero.featuredClients}
                   </h3>
-                  <span className="text-[11px] font-mono text-white/50">
-                    Otomotif · Robotika
+                  <span className={`text-[10px] sm:text-[11px] font-mono ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                    {t.hero.clientsSubtitle}
                   </span>
                 </div>
 
@@ -380,26 +568,34 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
                   >
                     <div className="animate-marquee flex gap-3 sm:gap-4 will-change-transform">
                       {/* First set */}
-                      <div className="flex gap-3 sm:gap-4 shrink-0">
+                      <div className="flex gap-2.5 sm:gap-3 shrink-0">
                         {marqueeItems.map((item, idx) => (
                           <div
                             key={`m1-${idx}`}
-                            className="inline-flex items-center justify-center px-3.5 py-1.5 bg-white/5 border border-white/10 hover:border-amber-400/40 rounded-xl text-xs font-medium text-neutral-200 whitespace-nowrap backdrop-blur-md transition-colors"
+                            className={`inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors border ${
+                              isDark
+                                ? 'bg-white/5 border-white/10 text-neutral-200'
+                                : 'bg-slate-100 border-slate-200 text-slate-800'
+                            }`}
                           >
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mr-2 shrink-0" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 shrink-0" />
                             {item}
                           </div>
                         ))}
                       </div>
 
                       {/* Duplicate set for seamless infinite loop */}
-                      <div className="flex gap-3 sm:gap-4 shrink-0">
+                      <div className="flex gap-2.5 sm:gap-3 shrink-0">
                         {marqueeItems.map((item, idx) => (
                           <div
                             key={`m2-${idx}`}
-                            className="inline-flex items-center justify-center px-3.5 py-1.5 bg-white/5 border border-white/10 hover:border-amber-400/40 rounded-xl text-xs font-medium text-neutral-200 whitespace-nowrap backdrop-blur-md transition-colors"
+                            className={`inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors border ${
+                              isDark
+                                ? 'bg-white/5 border-white/10 text-neutral-200'
+                                : 'bg-slate-100 border-slate-200 text-slate-800'
+                            }`}
                           >
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mr-2 shrink-0" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 shrink-0" />
                             {item}
                           </div>
                         ))}
@@ -408,9 +604,13 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between text-[11px] text-white/50 font-mono">
-                  <span>Ekspor: JP · MY · PH · TH</span>
-                  <span>Mitra: Epson · Yaskawa · Hiwin</span>
+                <div
+                  className={`mt-3 flex items-center justify-between text-[11px] font-mono ${
+                    isDark ? 'text-neutral-400' : 'text-slate-500'
+                  }`}
+                >
+                  <span>{t.hero.exportNote}</span>
+                  <span>{t.hero.partnersNote}</span>
                 </div>
               </div>
             </div>
@@ -420,23 +620,43 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
         </div>
       </div>
 
-      {/* Intuitive Quick Category Navigation Bar at bottom of Hero */}
-      <div className="relative z-10 border-t border-white/10 bg-neutral-950/80 backdrop-blur-md mt-6">
+      {/* Category Navigation Bar at bottom of Hero - Touch Friendly on Mobile */}
+      <div
+        className={`relative z-10 border-t backdrop-blur-md mt-8 sm:mt-10 ${
+          isDark
+            ? 'border-neutral-800/80 bg-[#080a0f]/90'
+            : 'border-slate-200 bg-white/90 shadow-xs'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between overflow-x-auto no-scrollbar gap-2 sm:gap-4 py-1">
-            <span className="text-xs font-mono uppercase text-neutral-400 tracking-wider whitespace-nowrap hidden sm:inline-block">
-              Akses Kategori:
+            <span
+              className={`text-xs font-mono uppercase tracking-wider whitespace-nowrap hidden sm:inline-block ${
+                isDark ? 'text-neutral-400' : 'text-slate-500'
+              }`}
+            >
+              {t.hero.categoryAccess}
             </span>
             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => onSelectCategory(cat.id)}
-                  className="group flex-1 sm:flex-initial inline-flex items-center justify-between sm:justify-start gap-2 px-3 py-1.5 rounded-full text-xs font-medium text-neutral-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all cursor-pointer whitespace-nowrap focus:outline-none"
+                  className={`group flex-1 sm:flex-initial inline-flex items-center justify-between sm:justify-start gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer whitespace-nowrap focus:outline-none ${
+                    isDark
+                      ? 'text-neutral-300 hover:text-white bg-white/5 hover:bg-white/10 border-white/10 hover:border-amber-400/30'
+                      : 'text-slate-700 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 border-slate-200 hover:border-amber-500/40 shadow-2xs'
+                  }`}
                 >
-                  <span className="group-hover:text-amber-400 transition-colors">{cat.label}</span>
-                  <span className="text-[10px] text-neutral-400 group-hover:text-neutral-300 font-mono">
-                    {cat.count}
+                  <span className={isDark ? 'group-hover:text-amber-400' : 'group-hover:text-amber-600'}>
+                    {cat.label}
+                  </span>
+                  <span
+                    className={`text-[10px] font-mono ${
+                      isDark ? 'text-neutral-400' : 'text-slate-500'
+                    }`}
+                  >
+                    {cat.countBadge}
                   </span>
                 </button>
               ))}
@@ -448,4 +668,3 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
     </section>
   );
 };
-

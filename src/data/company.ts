@@ -6,16 +6,18 @@ export const COMPANY_INFO = {
   iso: 'ISO 9001:2015 (Cert No. MD/PTT954 - IDCAB MANDALA Accredited)',
   foundedYear: 1999,
   address: 'Kawasan Industri MM2100, Jl. Flores 1 Blok C1 No. 17-18, Cibitung, Bekasi – 17520, Indonesia',
+  addressEn: 'MM2100 Industrial Estate, Jl. Flores 1 Blok C1 No. 17-18, Cibitung, Bekasi – 17520, Indonesia',
   phone: '+62 21 8980378',
   phoneDisplay: '+62 21 8980378 (Hunting)',
   fax: '+62 21 8980379',
   emailPrimary: 'primatech@centrin.net.id',
   emailSecondary: 'ikaandych@gmail.com',
-  website: 'www.ptt-id.com',
+  website: 'www.pttid.com',
   websiteAlias: 'www.pttid.com',
   landArea: '2,806 m²',
   buildingArea: '2,400 m²',
   employees: '90 Orang (Data per 31 Des 2025)',
+  employeesEn: '90 Specialists (Data as of Dec 31, 2025)',
   whatsappDirect: '62218980378',
 };
 
@@ -23,38 +25,56 @@ export const MILESTONES = [
   {
     year: '1999',
     title: 'Perintisan & Pendirian Perusahaan',
+    titleEn: 'Founding & Establishment',
     sub: 'Bekasi Area',
+    subEn: 'Bekasi Industrial District',
     desc: 'PT. PRIMA TEKNIK TRADA resmi didirikan di wilayah Bekasi dengan fokus produksi utama pada perancangan customized machine industri.',
+    descEn: 'PT. PRIMA TEKNIK TRADA officially established in Bekasi, focusing primarily on custom industrial machine design and manufacturing.',
   },
   {
     year: '2003',
     title: 'Relokasi Pabrik Jababeka-1',
+    titleEn: 'Relocation to Jababeka-1 Plant',
     sub: 'Jababeka Industrial Estate',
+    subEn: 'Jababeka Industrial Estate',
     desc: 'Memperluas kapasitas produksi dan perakitan mesin dengan memindahkan fasilitas manufaktur ke kawasan industri Jababeka-1.',
+    descEn: 'Expanded assembly and production capabilities by relocating the manufacturing plant to Jababeka-1 Industrial Estate.',
   },
   {
     year: '2005',
     title: 'Ekspansi Pabrik MM2100 Cibitung',
+    titleEn: 'Expansion into MM2100 Cibitung',
     sub: 'MM2100 Industrial Estate',
+    subEn: 'MM2100 Industrial Estate',
     desc: 'Memulai operasi manufaktur terintegrasi di pabrik baru yang strategis di Kawasan Industri MM2100 Cibitung.',
+    descEn: 'Inaugurated integrated manufacturing operations at a newly built facility in the strategic MM2100 Industrial Estate, Cibitung.',
   },
   {
     year: '2013',
     title: 'Ekspansi Total Pabrik MM2100',
+    titleEn: 'Major MM2100 Plant Expansion',
     sub: 'Luas Lahan 2.806 m²',
+    subEn: 'Land Area 2,806 m²',
     desc: 'Peluasan fasilitas pabrik menjadi 2.806 m² tanah & 2.400 m² bangunan dengan penambahan instalasi mesin CNC Double Column heavy-duty.',
+    descEn: 'Substantial site expansion to 2,806 m² land and 2,400 m² plant floor, adding heavy-duty Double Column CNC machining centers.',
   },
   {
     year: '2018',
     title: 'Produksi Massal Stamping Press',
+    titleEn: 'Stamping Press Mass Production',
     sub: 'Press hingga 250 Ton',
+    subEn: 'Press up to 250 Ton',
     desc: 'Memperluas lini kapabilitas dengan memulai proses stamping press untuk produksi massal komponen otomotif & industri (Amada, Shieh Yieh, Komatsu).',
+    descEn: 'Commissioned heavy stamping press lines up to 250 Ton (Amada, Shieh Yieh, Komatsu) for automotive and precision parts mass production.',
   },
   {
     year: '2026',
     title: 'Fasilitas Machining Mass Production',
+    titleEn: 'Advanced Multi-Axis Mass Production',
     sub: 'Multi-Axis CNC Machining',
+    subEn: 'Multi-Axis CNC Machining',
     desc: 'Peningkatan fasilitas permesinan canggih untuk mass production suku cadang presisi tinggi, CNC turning 4-axis, dan robotika industri terintegrasi.',
+    descEn: 'Upgraded high-precision multi-axis machining cells, 4-axis CNC lathes, and turnkey robotics integration for Tier-1 automotive supply.',
   },
 ];
 
@@ -80,10 +100,10 @@ export const CLIENT_LOGOS = [
 ];
 
 export const OVERSEAS_MARKETS = [
-  { country: 'Jepang', code: 'JP', flag: '🇯🇵', note: 'Komponen Mesin & Dies' },
-  { country: 'Malaysia', code: 'MY', flag: '🇲🇾', note: 'Jig, Fixture & Precision Parts' },
-  { country: 'Filipina', code: 'PH', flag: '🇵🇭', note: 'Sistem Otomasi & Mesin Perakitan' },
-  { country: 'Thailand', code: 'TH', flag: '🇹🇭', note: 'Stamping Dies & Mass Parts' },
+  { country: 'Jepang', countryEn: 'Japan', code: 'JP', flag: '🇯🇵', note: 'Komponen Mesin & Dies', noteEn: 'Machine Components & Stamping Dies' },
+  { country: 'Malaysia', countryEn: 'Malaysia', code: 'MY', flag: '🇲🇾', note: 'Jig, Fixture & Precision Parts', noteEn: 'Jigs, Fixtures & Precision Tooling' },
+  { country: 'Filipina', countryEn: 'Philippines', code: 'PH', flag: '🇵🇭', note: 'Sistem Otomasi & Mesin Perakitan', noteEn: 'Automation Systems & Assembly Lines' },
+  { country: 'Thailand', countryEn: 'Thailand', code: 'TH', flag: '🇹🇭', note: 'Stamping Dies & Mass Parts', noteEn: 'Stamping Dies & Mass Production Parts' },
 ];
 
 export const TECHNICAL_PARTNERS = [
