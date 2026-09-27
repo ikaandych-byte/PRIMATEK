@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import catalogHeroImg from '../assets/images/cat_automation_machines_1790239867045.jpg';
 
 interface CatalogPageProps {
   selectedCategory: MachineCategory;
@@ -62,12 +63,49 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             : 'bg-gradient-to-b from-slate-100 via-white to-slate-50 border-slate-200'
         }`}
       >
-        {/* Subtle Background Lighting & Grid */}
-        <div className="absolute inset-0 bg-tech-grid opacity-70 pointer-events-none" />
+        {/* 1. Hero Background Machinery Image (Always clearly visible in both light & dark modes) */}
+        <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+          <img
+            src={catalogHeroImg}
+            alt="PT. PRIMA TEKNIK TRADA Industrial Machinery & Robotics Catalog"
+            className={`w-full h-full object-cover object-center scale-100 sm:scale-105 transition-all duration-700 ${
+              isDark
+                ? 'opacity-70 brightness-95 contrast-110 saturate-[1.15]'
+                : 'opacity-65 brightness-100 contrast-105 saturate-[1.1]'
+            }`}
+          />
+          {/* Readability Vignette Gradient */}
+          <div
+            className={`absolute inset-0 transition-colors duration-300 ${
+              isDark
+                ? 'bg-gradient-to-r from-[#080a0f]/95 via-[#080a0f]/80 to-[#080a0f]/45'
+                : 'bg-gradient-to-r from-slate-100/95 via-white/82 to-slate-100/50'
+            }`}
+          />
+          <div
+            className={`absolute inset-0 transition-colors duration-300 ${
+              isDark
+                ? 'bg-gradient-to-b from-[#080a0f]/75 via-transparent to-[#080a0f]/90'
+                : 'bg-gradient-to-b from-white/70 via-transparent to-slate-100/85'
+            }`}
+          />
+        </div>
+
+        {/* 2. Soft Ambient Glowing Accents - Precision Cyan / Electric Sky */}
         <div
-          className={`absolute top-0 right-1/4 w-96 h-96 rounded-full blur-[130px] pointer-events-none ${
-            isDark ? 'bg-amber-500/10' : 'bg-amber-500/15'
+          className={`absolute -top-32 left-1/4 w-[480px] h-[480px] rounded-full blur-[140px] pointer-events-none ${
+            isDark ? 'bg-cyan-500/15' : 'bg-cyan-400/15'
           }`}
+        />
+        <div
+          className={`absolute top-1/3 -right-28 w-[420px] h-[420px] rounded-full blur-[150px] pointer-events-none ${
+            isDark ? 'bg-sky-500/15' : 'bg-sky-400/15'
+          }`}
+        />
+
+        {/* 3. Subtle Tech Grid Pattern */}
+        <div
+          className="absolute inset-0 bg-tech-grid [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none opacity-20"
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -80,13 +118,13 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             <button
               onClick={() => onSelectPage('beranda')}
               className={`hover:underline cursor-pointer ${
-                isDark ? 'hover:text-amber-400' : 'hover:text-amber-600'
+                isDark ? 'hover:text-cyan-400' : 'hover:text-cyan-600'
               }`}
             >
               {t.nav.home}
             </button>
             <span className={isDark ? 'text-neutral-600' : 'text-slate-300'}>/</span>
-            <span className={`font-semibold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+            <span className={`font-semibold ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>
               {language === 'en' ? 'Catalog & Technical Specifications' : 'Katalog & Spesifikasi Teknis'}
             </span>
           </div>
@@ -94,18 +132,18 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6">
             <div className="max-w-3xl space-y-3">
               <div
-                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-mono border ${
+                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-mono border backdrop-blur-md shadow-xs ${
                   isDark
-                    ? 'bg-neutral-900 border-neutral-700/80 text-neutral-300'
-                    : 'bg-white border-slate-300 text-slate-700 shadow-2xs'
+                    ? 'bg-neutral-900/90 border-cyan-500/30 text-cyan-300'
+                    : 'bg-white/95 border-cyan-400/40 text-cyan-800 shadow-2xs'
                 }`}
               >
-                <TableProperties className={`w-3.5 h-3.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-                <span className="uppercase tracking-wider">
+                <TableProperties className={`w-3.5 h-3.5 ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`} />
+                <span className="uppercase tracking-wider font-semibold">
                   {language === 'en' ? 'Machinery & Engineering Catalog' : 'Katalog Produk & Rekayasa Presisi'}
                 </span>
                 <span className={isDark ? 'text-neutral-600' : 'text-slate-300'}>|</span>
-                <span className={`font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                <span className={`font-mono font-semibold ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>
                   MM2100 CIBITUNG
                 </span>
               </div>
@@ -121,8 +159,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                     <span
                       className={`bg-clip-text text-transparent ${
                         isDark
-                          ? 'bg-gradient-to-r from-amber-300 via-amber-400 to-amber-200'
-                          : 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600'
+                          ? 'bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-300'
+                          : 'bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-700'
                       }`}
                     >
                       Technical Specs
@@ -134,8 +172,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                     <span
                       className={`bg-clip-text text-transparent ${
                         isDark
-                          ? 'bg-gradient-to-r from-amber-300 via-amber-400 to-amber-200'
-                          : 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600'
+                          ? 'bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-300'
+                          : 'bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-700'
                       }`}
                     >
                       Spesifikasi Teknis
@@ -162,7 +200,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                   onSelectPage('tentang');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="px-4 py-2.5 text-xs font-bold text-neutral-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-all shadow-md shadow-amber-500/20 cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2.5 text-xs font-bold text-neutral-950 bg-cyan-400 hover:bg-cyan-300 rounded-xl transition-all shadow-md shadow-cyan-400/25 cursor-pointer flex items-center gap-1.5"
               >
                 <span>{t.home.ctaRfqBtn}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -193,7 +231,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                     onClick={() => onSelectCategory(pill.id)}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all cursor-pointer border ${
                       isActive
-                        ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow-md shadow-amber-400/20'
+                        ? 'bg-cyan-400 text-neutral-950 font-bold border-cyan-400 shadow-md shadow-cyan-400/20'
                         : isDark
                           ? 'bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border-neutral-800 hover:border-neutral-700'
                           : 'bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-950 border-slate-200 shadow-2xs'
@@ -204,8 +242,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                         isActive
                           ? 'text-neutral-950'
                           : isDark
-                            ? 'text-amber-400'
-                            : 'text-amber-600'
+                            ? 'text-cyan-400'
+                            : 'text-cyan-600'
                       }`}
                     />
                     <span>{pill.label}</span>

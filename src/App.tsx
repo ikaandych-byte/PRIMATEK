@@ -8,8 +8,8 @@ import { Footer } from './components/Footer';
 import { MachineDetailModal } from './components/MachineDetailModal';
 import { MachineCompareModal } from './components/MachineCompareModal';
 import { MachineItem, MachineCategory, RfqItem } from './types';
-import { MACHINES_DATA } from './data/machines';
-import { FileText, CheckCircle2 } from 'lucide-react';
+import { FileText, CheckCircle2, MessageSquare } from 'lucide-react';
+import { COMPANY_INFO } from './data/company';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 
@@ -256,15 +256,17 @@ function AppContent() {
         />
       )}
 
-      {/* Sticky Bottom RFQ Shortcut Button on Mobile */}
+      {/* Sticky Bottom WhatsApp RFQ Shortcut Button on Mobile */}
       <div className="sm:hidden fixed bottom-4 right-4 z-40">
-        <button
-          onClick={() => navigateToPage('tentang', 'kontak')}
-          className="flex items-center gap-2 px-4 py-3 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs rounded-full shadow-2xl shadow-amber-500/40 active:scale-95 transition-all cursor-pointer"
+        <a
+          href={`https://wa.me/${COMPANY_INFO.whatsappDirect}?text=${encodeURIComponent(COMPANY_INFO.whatsappDefaultMessage)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-full shadow-2xl shadow-emerald-600/40 active:scale-95 transition-all cursor-pointer"
         >
-          <FileText className="w-4 h-4" />
-          <span>{language === 'en' ? `Request RFQ (${rfqItems.length})` : `Minta Penawaran (${rfqItems.length})`}</span>
-        </button>
+          <MessageSquare className="w-4 h-4 shrink-0" />
+          <span>Request RFQ (WhatsApp)</span>
+        </a>
       </div>
     </div>
   );

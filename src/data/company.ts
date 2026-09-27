@@ -18,7 +18,9 @@ export const COMPANY_INFO = {
   buildingArea: '2,400 m²',
   employees: '90 Orang (Data per 31 Des 2025)',
   employeesEn: '90 Specialists (Data as of Dec 31, 2025)',
-  whatsappDirect: '62218980378',
+  whatsappDirect: '628161922957',
+  whatsappDisplay: '+62 816-1922-957',
+  whatsappDefaultMessage: 'Hallo PT Prima Teknik Trada, saya ingin mengetahui produk Customized Machine dari company anda, apakah kita bisa terhubung?',
 };
 
 export const MILESTONES = [

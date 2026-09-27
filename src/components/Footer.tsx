@@ -197,15 +197,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
           <div className="flex flex-wrap items-center gap-2 text-center sm:text-left">
             <span>&copy; {new Date().getFullYear()} {COMPANY_INFO.name}. {language === 'en' ? 'All Rights Reserved.' : 'Hak Cipta Dilindungi Undang-Undang.'}</span>
           </div>
-          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 sm:gap-4">
-            <span className="font-mono text-neutral-400">
-              {language === 'en' ? 'Domain: ' : 'Domain: '}
-              <strong className="text-amber-400 font-semibold">www.pttid.com</strong>
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-neutral-900 border border-neutral-800 text-[10px] text-neutral-300 font-mono shadow-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>GitHub Pages Active</span>
-            </span>
+          <div className="flex items-center gap-3">
             <button
               onClick={scrollToTop}
               className="p-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors cursor-pointer"

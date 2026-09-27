@@ -11,6 +11,7 @@ import {
 import { COMPANY_INFO } from '../data/company';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import facilitiesHeroImg from '../assets/images/cat_mass_production_1790239901539.jpg';
 
 interface FacilitiesPageProps {
   onSelectPage: (page: AppPage) => void;
@@ -128,12 +129,49 @@ export const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
             : 'bg-gradient-to-b from-slate-100 via-white to-slate-50 border-slate-200'
         }`}
       >
-        {/* Subtle Background Lighting & Grid */}
-        <div className="absolute inset-0 bg-tech-grid opacity-70 pointer-events-none" />
+        {/* 1. Hero Background Manufacturing Plant Image (Always clearly visible in both light & dark modes) */}
+        <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+          <img
+            src={facilitiesHeroImg}
+            alt="PT. PRIMA TEKNIK TRADA MM2100 Cibitung Manufacturing Plant & Fleet"
+            className={`w-full h-full object-cover object-center scale-100 sm:scale-105 transition-all duration-700 ${
+              isDark
+                ? 'opacity-70 brightness-95 contrast-110 saturate-[1.15]'
+                : 'opacity-65 brightness-100 contrast-105 saturate-[1.1]'
+            }`}
+          />
+          {/* Readability Vignette Gradient */}
+          <div
+            className={`absolute inset-0 transition-colors duration-300 ${
+              isDark
+                ? 'bg-gradient-to-r from-[#080a0f]/95 via-[#080a0f]/80 to-[#080a0f]/45'
+                : 'bg-gradient-to-r from-slate-100/95 via-white/82 to-slate-100/50'
+            }`}
+          />
+          <div
+            className={`absolute inset-0 transition-colors duration-300 ${
+              isDark
+                ? 'bg-gradient-to-b from-[#080a0f]/75 via-transparent to-[#080a0f]/90'
+                : 'bg-gradient-to-b from-white/70 via-transparent to-slate-100/85'
+            }`}
+          />
+        </div>
+
+        {/* 2. Soft Ambient Glowing Accents - Industrial Emerald / Technical Teal */}
         <div
-          className={`absolute top-0 right-1/4 w-96 h-96 rounded-full blur-[130px] pointer-events-none ${
-            isDark ? 'bg-amber-500/10' : 'bg-amber-500/15'
+          className={`absolute -top-32 left-1/4 w-[480px] h-[480px] rounded-full blur-[140px] pointer-events-none ${
+            isDark ? 'bg-emerald-500/15' : 'bg-emerald-400/15'
           }`}
+        />
+        <div
+          className={`absolute top-1/3 -right-28 w-[420px] h-[420px] rounded-full blur-[150px] pointer-events-none ${
+            isDark ? 'bg-teal-500/15' : 'bg-teal-400/15'
+          }`}
+        />
+
+        {/* 3. Subtle Tech Grid Pattern */}
+        <div
+          className="absolute inset-0 bg-tech-grid [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none opacity-20"
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -146,13 +184,13 @@ export const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
             <button
               onClick={() => onSelectPage('beranda')}
               className={`hover:underline cursor-pointer ${
-                isDark ? 'hover:text-amber-400' : 'hover:text-amber-600'
+                isDark ? 'hover:text-emerald-400' : 'hover:text-emerald-600'
               }`}
             >
               {t.nav.home}
             </button>
             <span className={isDark ? 'text-neutral-600' : 'text-slate-300'}>/</span>
-            <span className={`font-semibold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+            <span className={`font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
               {language === 'en' ? 'MM2100 Plant & Facilities' : 'Fasilitas Pabrik MM2100'}
             </span>
           </div>
@@ -160,18 +198,18 @@ export const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6">
             <div className="max-w-3xl space-y-3">
               <div
-                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-mono border ${
+                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-mono border backdrop-blur-md shadow-xs ${
                   isDark
-                    ? 'bg-neutral-900 border-neutral-700/80 text-neutral-300'
-                    : 'bg-white border-slate-300 text-slate-700 shadow-2xs'
+                    ? 'bg-neutral-900/90 border-emerald-500/30 text-emerald-300'
+                    : 'bg-white/95 border-emerald-400/40 text-emerald-800 shadow-2xs'
                 }`}
               >
-                <Building className={`w-3.5 h-3.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-                <span className="uppercase tracking-wider">
+                <Building className={`w-3.5 h-3.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                <span className="uppercase tracking-wider font-semibold">
                   {language === 'en' ? 'Manufacturing Infrastructure & Assets' : 'Fasilitas & Infrastruktur Produksi'}
                 </span>
                 <span className={isDark ? 'text-neutral-600' : 'text-slate-300'}>|</span>
-                <span className={`font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                <span className={`font-mono font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
                   MM2100 CIBITUNG
                 </span>
               </div>
@@ -187,8 +225,8 @@ export const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
                     <span
                       className={`bg-clip-text text-transparent ${
                         isDark
-                          ? 'bg-gradient-to-r from-amber-300 via-amber-400 to-amber-200'
-                          : 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600'
+                          ? 'bg-gradient-to-r from-emerald-300 via-teal-300 to-emerald-200'
+                          : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700'
                       }`}
                     >
                       Precision Fleet
@@ -200,8 +238,8 @@ export const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
                     <span
                       className={`bg-clip-text text-transparent ${
                         isDark
-                          ? 'bg-gradient-to-r from-amber-300 via-amber-400 to-amber-200'
-                          : 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600'
+                          ? 'bg-gradient-to-r from-emerald-300 via-teal-300 to-emerald-200'
+                          : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700'
                       }`}
                     >
                       Armada Mesin Presisi
@@ -226,7 +264,7 @@ export const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
                   onSelectPage('tentang');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="px-4 py-2.5 text-xs font-bold text-neutral-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-all shadow-md shadow-amber-500/20 cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2.5 text-xs font-bold text-neutral-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition-all shadow-md shadow-emerald-400/25 cursor-pointer flex items-center gap-1.5"
               >
                 <span>{t.home.ctaRfqBtn}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
