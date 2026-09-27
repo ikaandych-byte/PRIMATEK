@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, FileText, PhoneCall, MessageSquare } from 'lucide-react';
+import { Menu, X, PhoneCall } from 'lucide-react';
 import { COMPANY_INFO } from '../data/company';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageToggle } from './LanguageToggle';
@@ -142,18 +142,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Dark Mode / Light Mode Toggle Button */}
             <ThemeToggle />
 
-            {/* Green WhatsApp Action: Request RFQ */}
-            <a
-              href={`https://wa.me/${COMPANY_INFO.whatsappDirect}?text=${encodeURIComponent(COMPANY_INFO.whatsappDefaultMessage)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all shadow-md active:scale-98 whitespace-nowrap bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/25 cursor-pointer"
-              title="WhatsApp: +62 816-1922-957"
-            >
-              <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-              <span>Request RFQ</span>
-            </a>
-
             {/* Mobile / Tablet Menu Toggle Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -215,15 +203,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                   isDark ? 'border-neutral-800/80' : 'border-slate-200'
                 }`}
               >
-                <a
-                  href={`https://wa.me/${COMPANY_INFO.whatsappDirect}?text=${encodeURIComponent(COMPANY_INFO.whatsappDefaultMessage)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 px-4 py-3 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/25 active:scale-98"
-                >
-                  <MessageSquare className="w-4 h-4 shrink-0" />
-                  <span>Request RFQ via WhatsApp</span>
-                </a>
                 <a
                   href={`tel:${COMPANY_INFO.phone.replace(/[^0-9+]/g, '')}`}
                   className={`flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-xl border ${
