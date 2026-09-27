@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import heroPoster from '../assets/images/hero_industrial_automation_1790239853481.jpg';
 import { COMPANY_INFO } from '../data/company';
+import { CompanyMiniLogo } from './CompanyLogos';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getLocalizedCategories } from '../utils/localizedData';
@@ -83,17 +84,19 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
 
   const categories = getLocalizedCategories(language).filter((c) => c.id !== 'all');
 
-  const marqueeItems = [
-    'Astra Daihatsu Motor',
-    'Astra Honda Motor (AHM)',
-    'Yamaha Indonesia Motor',
-    'Mitsubishi Motors',
-    'Kalbe Farma',
-    'EPSON ROBOT Partner',
-    'YASKAWA Robotics',
-    'NSK Bearing',
-    'BOSCH Rexroth',
-    'KEYENCE Vision',
+  const featuredBrands = [
+    { id: 'daihatsu', name: 'Astra Daihatsu Motor', tag: 'OEM 4W' },
+    { id: 'honda', name: 'Astra Honda Motor (AHM)', tag: 'OEM 2W' },
+    { id: 'yamaha', name: 'Yamaha Indonesia Motor', tag: 'OEM 2W' },
+    { id: 'mitsubishi', name: 'Mitsubishi Motors', tag: 'OEM 4W' },
+    { id: 'kalbe', name: 'Kalbe Farma', tag: 'Pharma' },
+    { id: 'epson', name: 'EPSON Robotics', tag: 'Robot SI' },
+    { id: 'yaskawa', name: 'YASKAWA Motoman', tag: 'Robotics' },
+    { id: 'nsk', name: 'NSK Bearing', tag: 'Precision' },
+    { id: 'bosch', name: 'BOSCH Rexroth', tag: 'Hydraulics' },
+    { id: 'keyence', name: 'KEYENCE Vision', tag: 'Vision & QA' },
+    { id: 'omron', name: 'OMRON Automation', tag: 'PLC & Safety' },
+    { id: 'hiwin', name: 'HIWIN Motion', tag: 'Linear Motion' },
   ];
 
   return (
@@ -566,37 +569,51 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
                     }}
                     className="overflow-hidden py-1"
                   >
-                    <div className="animate-marquee flex gap-3 sm:gap-4 will-change-transform">
+                    <div className="animate-marquee flex gap-3 sm:gap-4 will-change-transform items-center">
                       {/* First set */}
-                      <div className="flex gap-2.5 sm:gap-3 shrink-0">
-                        {marqueeItems.map((item, idx) => (
+                      <div className="flex gap-2.5 sm:gap-3 shrink-0 items-center">
+                        {featuredBrands.map((item, idx) => (
                           <div
                             key={`m1-${idx}`}
-                            className={`inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors border ${
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors border shadow-2xs ${
                               isDark
-                                ? 'bg-white/5 border-white/10 text-neutral-200'
-                                : 'bg-slate-100 border-slate-200 text-slate-800'
+                                ? 'bg-neutral-800/90 border-neutral-700/80 text-neutral-200 hover:border-amber-400/50'
+                                : 'bg-white border-slate-200 text-slate-800 hover:border-amber-500/50 shadow-xs'
                             }`}
                           >
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 shrink-0" />
-                            {item}
+                            <CompanyMiniLogo id={item.id} className="w-4 h-4 shrink-0 rounded-md" />
+                            <span className="font-semibold tracking-tight">{item.name}</span>
+                            <span
+                              className={`text-[9.5px] font-mono px-1.5 py-0.5 rounded-md ${
+                                isDark ? 'bg-neutral-900/80 text-neutral-400' : 'bg-slate-100 text-slate-500'
+                              }`}
+                            >
+                              {item.tag}
+                            </span>
                           </div>
                         ))}
                       </div>
 
                       {/* Duplicate set for seamless infinite loop */}
-                      <div className="flex gap-2.5 sm:gap-3 shrink-0">
-                        {marqueeItems.map((item, idx) => (
+                      <div className="flex gap-2.5 sm:gap-3 shrink-0 items-center">
+                        {featuredBrands.map((item, idx) => (
                           <div
                             key={`m2-${idx}`}
-                            className={`inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors border ${
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors border shadow-2xs ${
                               isDark
-                                ? 'bg-white/5 border-white/10 text-neutral-200'
-                                : 'bg-slate-100 border-slate-200 text-slate-800'
+                                ? 'bg-neutral-800/90 border-neutral-700/80 text-neutral-200 hover:border-amber-400/50'
+                                : 'bg-white border-slate-200 text-slate-800 hover:border-amber-500/50 shadow-xs'
                             }`}
                           >
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 shrink-0" />
-                            {item}
+                            <CompanyMiniLogo id={item.id} className="w-4 h-4 shrink-0 rounded-md" />
+                            <span className="font-semibold tracking-tight">{item.name}</span>
+                            <span
+                              className={`text-[9.5px] font-mono px-1.5 py-0.5 rounded-md ${
+                                isDark ? 'bg-neutral-900/80 text-neutral-400' : 'bg-slate-100 text-slate-500'
+                              }`}
+                            >
+                              {item.tag}
+                            </span>
                           </div>
                         ))}
                       </div>

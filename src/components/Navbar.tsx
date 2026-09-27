@@ -62,29 +62,29 @@ export const Navbar: React.FC<NavbarProps> = ({
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-2 sm:gap-4">
-          {/* Brand Logo & Wordmark - Responsive sizing for Mobile, Tablet, PC */}
+          {/* Brand Logo & Wordmark - Styled to match official PTT brand identity */}
           <button
             onClick={() => handleNavClick('beranda')}
-            className="group flex items-center gap-2 sm:gap-2.5 text-left focus:outline-none cursor-pointer shrink-0"
+            className="group flex items-center gap-2.5 sm:gap-3 text-left focus:outline-none cursor-pointer shrink-0"
           >
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-display font-black text-amber-500 text-xs sm:text-sm tracking-wider group-hover:border-amber-400 transition-colors shadow-xs">
+            {/* Official PTT Rounded Badge */}
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] sm:rounded-xl bg-[#0c0e14] border-2 border-amber-500/85 flex items-center justify-center font-display font-black text-amber-500 text-sm sm:text-base tracking-wide group-hover:border-amber-400 group-hover:scale-105 transition-all shadow-md shrink-0">
               PTT
             </div>
             <div className="flex flex-col">
               <span
-                className={`font-display font-bold text-sm sm:text-base lg:text-lg tracking-tight transition-colors whitespace-nowrap ${
+                className={`font-display font-bold text-sm sm:text-base lg:text-[17px] tracking-tight transition-colors whitespace-nowrap leading-tight ${
                   isDark ? 'text-white group-hover:text-amber-400' : 'text-slate-900 group-hover:text-amber-600'
                 }`}
               >
-                <span className="hidden sm:inline">PT. PRIMA TEKNIK TRADA</span>
-                <span className="sm:hidden font-extrabold tracking-tight">PT. PRIMA TEKNIK TRADA</span>
+                PT. PRIMA TEKNIK TRADA
               </span>
               <span
-                className={`hidden md:block text-[9px] font-mono tracking-wider uppercase -mt-0.5 ${
-                  isDark ? 'text-neutral-400' : 'text-slate-500'
+                className={`block text-[8px] sm:text-[9.5px] lg:text-[10px] font-mono tracking-[0.14em] sm:tracking-[0.2em] uppercase font-semibold transition-colors mt-0.5 whitespace-nowrap ${
+                  isDark ? 'text-neutral-400 group-hover:text-neutral-300' : 'text-slate-500 group-hover:text-slate-700'
                 }`}
               >
-                Precision Machinery &amp; Automation
+                SYSTEM INTEGRATOR &amp; AUTOMATION
               </span>
             </div>
           </button>

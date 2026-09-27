@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CLIENT_LOGOS, TECHNICAL_PARTNERS, OVERSEAS_MARKETS } from '../data/company';
 import { Globe, Cpu, ShieldCheck } from 'lucide-react';
-import { CompanyLogo } from './CompanyLogos';
+import { CompanyLogo, CompanyMiniLogo, getLogoIdFromName } from './CompanyLogos';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -11,11 +11,12 @@ export const ClientMarquee: React.FC = () => {
   const isDark = theme === 'dark';
   const [activeTab, setActiveTab] = useState<'all' | 'automotive' | 'partners'>('all');
 
-  const FEATURED_CLIENT_CARDS = [
+  const ALL_CARDS = [
     {
       id: 'daihatsu',
       name: 'PT. Astra Daihatsu Motor',
       sector: 'Automotive 4W OEM',
+      category: 'automotive',
       typeEn: 'Assembly Jig & Stamping Dies',
       typeId: 'Assembly Jig & Stamping Dies',
       country: 'Indonesia',
@@ -24,6 +25,7 @@ export const ClientMarquee: React.FC = () => {
       id: 'honda',
       name: 'PT. Astra Honda Motor (AHM)',
       sector: 'Automotive 2W OEM',
+      category: 'automotive',
       typeEn: 'Special Purpose Machine & Jig',
       typeId: 'Special Purpose Machine & Jig',
       country: 'Indonesia',
@@ -32,6 +34,7 @@ export const ClientMarquee: React.FC = () => {
       id: 'yamaha',
       name: 'PT. Yamaha Indonesia Motor',
       sector: 'Automotive 2W OEM',
+      category: 'automotive',
       typeEn: 'Robotic Welding & Inspection',
       typeId: 'Robotic Welding & Inspection',
       country: 'Indonesia',
@@ -40,6 +43,7 @@ export const ClientMarquee: React.FC = () => {
       id: 'mitsubishi',
       name: 'PT. Mitsubishi Motors KRM',
       sector: 'Automotive 4W OEM',
+      category: 'automotive',
       typeEn: 'Heavy Stamping Press Dies',
       typeId: 'Heavy Stamping Press Dies',
       country: 'Indonesia',
@@ -48,6 +52,7 @@ export const ClientMarquee: React.FC = () => {
       id: 'kalbe',
       name: 'PT. Kalbe Farma Tbk',
       sector: 'Pharmaceutical & Healthcare',
+      category: 'automotive',
       typeEn: 'Automated Packaging & Conveyor',
       typeId: 'Automated Packaging & Conveyor',
       country: 'Indonesia',
@@ -56,11 +61,73 @@ export const ClientMarquee: React.FC = () => {
       id: 'nsk',
       name: 'PT. NSK Bearing Mfg Indonesia',
       sector: 'Precision Bearing & Motion',
+      category: 'automotive',
       typeEn: 'Ultra-Precision Tooling & Fixture',
       typeId: 'Ultra-Precision Tooling & Fixture',
       country: 'Indonesia',
     },
+    {
+      id: 'epson',
+      name: 'EPSON ROBOTICS',
+      sector: 'Official Robot System Integrator',
+      category: 'partners',
+      typeEn: 'SCARA & 6-Axis High Speed Assembly',
+      typeId: 'Perakitan SCARA & 6-Axis Berkecepatan Tinggi',
+      country: 'Japan',
+    },
+    {
+      id: 'yaskawa',
+      name: 'YASKAWA MOTOMAN',
+      sector: 'Robotic Welding & Handling Partner',
+      category: 'partners',
+      typeEn: 'Arc Welding & Heavy Robot Cells',
+      typeId: 'Sel Robotik Welding & Heavy Handling',
+      country: 'Japan',
+    },
+    {
+      id: 'keyence',
+      name: 'KEYENCE INDONESIA',
+      sector: 'Vision & Laser Metrology Partner',
+      category: 'partners',
+      typeEn: 'High Accuracy Inline Vision QA',
+      typeId: 'Inspeksi Kamera Visi & Sensor Presisi',
+      country: 'Japan',
+    },
+    {
+      id: 'bosch',
+      name: 'BOSCH REXROTH',
+      sector: 'Motion & Hydraulics Technology',
+      category: 'partners',
+      typeEn: 'Proportional Valves & Linear Guide',
+      typeId: 'Sistem Hidrolik & Linear Motion',
+      country: 'Germany',
+    },
+    {
+      id: 'omron',
+      name: 'OMRON AUTOMATION',
+      sector: 'Industrial Controller & Safety PLC',
+      category: 'partners',
+      typeEn: 'Sysmac Controller & Safety Array',
+      typeId: 'PLC Sysmac & Sensor Keselamatan',
+      country: 'Japan',
+    },
+    {
+      id: 'hiwin',
+      name: 'HIWIN MOTION',
+      sector: 'Linear Motion & Actuator Systems',
+      category: 'partners',
+      typeEn: 'Precision Ballscrews & Linear Guide',
+      typeId: 'Ballscrew Presisi & Linear Guide Rail',
+      country: 'Taiwan',
+    },
   ];
+
+  const displayedCards =
+    activeTab === 'automotive'
+      ? ALL_CARDS.filter((c) => c.category === 'automotive')
+      : activeTab === 'partners'
+      ? ALL_CARDS.filter((c) => c.category === 'partners')
+      : ALL_CARDS.slice(0, 6);
 
   const FEATURED_PARTNERS = [
     {
@@ -92,6 +159,12 @@ export const ClientMarquee: React.FC = () => {
       name: 'OMRON AUTOMATION',
       role: 'Industrial Controller & Safety PLC',
       desc: 'Sysmac Controller & Sensor Array',
+    },
+    {
+      id: 'hiwin',
+      name: 'HIWIN MOTION',
+      role: 'Linear Motion & Actuator Systems',
+      desc: 'Ballscrew Presisi & Linear Guide Rail',
     },
   ];
 
@@ -193,7 +266,7 @@ export const ClientMarquee: React.FC = () => {
 
         {/* Highlighted Grid of Company Logos - Responsive for Mobile (2 cols), Tablet (3 cols), PC (6 cols) */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 my-8">
-          {FEATURED_CLIENT_CARDS.map((card) => (
+          {displayedCards.map((card) => (
             <div
               key={card.id}
               className={`group p-4 rounded-2xl border transition-all duration-300 flex flex-col justify-between items-center text-center shadow-sm hover:-translate-y-1 ${
@@ -202,10 +275,10 @@ export const ClientMarquee: React.FC = () => {
                   : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-amber-500/50 shadow-slate-200'
               }`}
             >
-              <div className="h-12 w-full flex items-center justify-center py-1 opacity-90 group-hover:opacity-100 transition-opacity">
+              <div className="h-12 w-full flex items-center justify-center py-1 opacity-95 group-hover:opacity-100 transition-opacity">
                 <CompanyLogo
                   id={card.id}
-                  className={`h-9 w-auto max-w-[140px] ${isDark ? 'text-white' : 'text-slate-900'}`}
+                  className={`h-9 w-auto max-w-[145px] ${isDark ? 'text-white' : 'text-slate-900'}`}
                 />
               </div>
               <div
@@ -253,21 +326,23 @@ export const ClientMarquee: React.FC = () => {
                   : 'Mitra Resmi Integrasi Robot & PLC:'}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               {FEATURED_PARTNERS.map((partner) => (
                 <div
                   key={partner.id}
-                  className={`flex items-center gap-2 ${
-                    isDark ? 'text-neutral-300' : 'text-slate-700'
+                  className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border transition-all ${
+                    isDark
+                      ? 'bg-neutral-900/90 border-neutral-800 hover:border-amber-400/40 text-neutral-300'
+                      : 'bg-white border-slate-200 hover:border-amber-500/40 text-slate-700 shadow-2xs'
                   }`}
                 >
-                  <CompanyLogo
-                    id={partner.id}
-                    className={`h-6 w-auto ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}
-                  />
+                  <CompanyMiniLogo id={partner.id} className="w-5 h-5 shrink-0 rounded-md" />
+                  <span className={`text-xs font-bold font-display ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {partner.name}
+                  </span>
                   <span
-                    className={`text-[11px] font-mono hidden sm:inline ${
-                      isDark ? 'text-neutral-400' : 'text-slate-500'
+                    className={`text-[10px] font-mono hidden sm:inline px-1.5 py-0.5 rounded ${
+                      isDark ? 'bg-neutral-800 text-amber-400/90' : 'bg-slate-100 text-amber-700'
                     }`}
                   >
                     · {partner.role.split(' ')[0]}
@@ -285,13 +360,13 @@ export const ClientMarquee: React.FC = () => {
           {[...CLIENT_LOGOS, ...CLIENT_LOGOS].map((client, idx) => (
             <div
               key={`${client.name}-${idx}`}
-              className={`shrink-0 flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all cursor-default ${
+              className={`shrink-0 flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-all cursor-default ${
                 isDark
                   ? 'bg-[#111520] border-neutral-800/90 hover:border-amber-400/40 hover:bg-[#151b28]'
                   : 'bg-white border-slate-200 hover:border-amber-500/40 hover:bg-slate-50 shadow-2xs'
               }`}
             >
-              <div className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+              <CompanyMiniLogo id={getLogoIdFromName(client.name)} className="w-5 h-5 shrink-0 rounded-md" />
               <div>
                 <div
                   className={`text-xs sm:text-sm font-semibold tracking-tight whitespace-nowrap ${

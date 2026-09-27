@@ -38,13 +38,18 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
           
           {/* Brand Info (2 cols) */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-display font-black text-amber-400 text-sm">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="w-9 h-9 rounded-[10px] bg-[#0c0e14] border-2 border-amber-500/85 flex items-center justify-center font-display font-black text-amber-500 text-sm tracking-wide shadow-md shrink-0">
                 PTT
               </div>
-              <span className="font-display font-bold text-base text-white tracking-tight">
-                {COMPANY_INFO.name}
-              </span>
+              <div className="flex flex-col">
+                <span className="font-display font-bold text-base text-white tracking-tight leading-tight">
+                  {COMPANY_INFO.name}
+                </span>
+                <span className="text-[9px] font-mono tracking-[0.18em] uppercase text-neutral-400 font-semibold mt-0.5">
+                  SYSTEM INTEGRATOR &amp; AUTOMATION
+                </span>
+              </div>
             </div>
             
             <p className="text-neutral-400 leading-relaxed text-xs max-w-sm">
@@ -68,7 +73,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
               </div>
               <div className="flex items-center gap-2">
                 <Globe className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>{COMPANY_INFO.website} ({COMPANY_INFO.websiteAlias})</span>
+                <span>{COMPANY_INFO.website}</span>
               </div>
             </div>
           </div>
