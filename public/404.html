@@ -2,22 +2,104 @@
 <html lang="id">
   <head>
     <meta charset="utf-8" />
-    <title>PT. PRIMA TEKNIK TRADA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PT. PRIMA TEKNIK TRADA - Memuat Halaman...</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <script>
-      // Single Page App redirect for GitHub Pages
-      // Redirects 404 paths to index.html preserving query and hash
-      var pathSegmentsToKeep = 0;
+      // Single Page Apps for GitHub Pages
+      // MIT License - https://github.com/rafgraph/spa-github-pages
+      // Auto-detects whether running on a GitHub Pages repository subpath (username.github.io/repo) or a custom domain (pttid.com)
       var l = window.location;
-      l.replace(
-        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
-        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
-        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-        l.hash
-      );
+      var isGitHubDomain = l.hostname.indexOf('github.io') !== -1;
+      var pathParts = l.pathname.split('/').filter(Boolean);
+      var pathSegmentsToKeep = (isGitHubDomain && pathParts.length > 0) ? 1 : 0;
+
+      // Handle standard section names directly into hash routes if applicable
+      var lastPart = pathParts.length > pathSegmentsToKeep ? pathParts[pathSegmentsToKeep] : '';
+      var repoPrefix = (isGitHubDomain && pathParts.length > 0) ? '/' + pathParts[0] : '';
+      var targetBase = l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + repoPrefix + '/';
+
+      if (['katalog', 'fasilitas', 'tentang', 'kontak', 'spesifikasi', 'beranda'].indexOf(lastPart) !== -1) {
+        l.replace(targetBase + '#' + lastPart);
+      } else {
+        l.replace(
+          targetBase + '?/' +
+          l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash
+        );
+      }
     </script>
+    <style>
+      body {
+        margin: 0;
+        background-color: #080a0f;
+        color: #f1f5f9;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        text-align: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .card {
+        background: #0f141f;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        border-radius: 16px;
+        padding: 32px 28px;
+        max-width: 420px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      }
+      .logo {
+        display: inline-flex;
+        width: 48px;
+        height: 48px;
+        background: rgba(245, 158, 11, 0.15);
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        border-radius: 12px;
+        align-items: center;
+        justify-content: center;
+        color: #f59e0b;
+        font-weight: 800;
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+      h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0 0 8px;
+        color: #ffffff;
+      }
+      p {
+        font-size: 13px;
+        color: #94a3b8;
+        line-height: 1.5;
+        margin: 0 0 20px;
+      }
+      .btn {
+        display: inline-block;
+        background: #f59e0b;
+        color: #09090b;
+        font-weight: 700;
+        font-size: 12px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: background 0.2s;
+      }
+      .btn:hover {
+        background: #fbbf24;
+      }
+    </style>
   </head>
   <body>
-    <p>Mengarahkan ke PT. PRIMA TEKNIK TRADA...</p>
+    <div class="card">
+      <div class="logo">PTT</div>
+      <h2>PT. PRIMA TEKNIK TRADA</h2>
+      <p>Mengarahkan ke showcase mesin presisi dan sistem otomasi...</p>
+      <a class="btn" href="./">Buka Beranda</a>
+    </div>
   </body>
 </html>
