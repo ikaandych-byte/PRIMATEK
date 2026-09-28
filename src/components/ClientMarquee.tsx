@@ -275,10 +275,10 @@ export const ClientMarquee: React.FC = () => {
                   : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-amber-500/50 shadow-slate-200'
               }`}
             >
-              <div className="h-12 w-full flex items-center justify-center py-1 opacity-95 group-hover:opacity-100 transition-opacity">
+              <div className="h-16 w-full flex items-center justify-center py-1 px-2 opacity-95 group-hover:opacity-100 transition-opacity">
                 <CompanyLogo
                   id={card.id}
-                  className={`h-9 w-auto max-w-[145px] ${isDark ? 'text-white' : 'text-slate-900'}`}
+                  className={`h-11 w-auto max-w-[130px] ${isDark ? 'text-white' : 'text-slate-900'}`}
                 />
               </div>
               <div
