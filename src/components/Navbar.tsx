@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, PhoneCall } from 'lucide-react';
-import { COMPANY_INFO } from '../data/company';
+import { Menu, X, LogIn, LogOut } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageToggle } from './LanguageToggle';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { PrimatechLogo } from './PrimatechLogo';
 
 export type AppPage = 'beranda' | 'katalog' | 'fasilitas' | 'tentang';
 
@@ -26,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { theme } = useTheme();
   const { language, t } = useLanguage();
   const isDark = theme === 'dark';
+  const { user, isAuthenticated, openAuthModal, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -62,31 +64,13 @@ export const Navbar: React.FC<NavbarProps> = ({
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-2 sm:gap-4">
-          {/* Brand Logo & Wordmark - Styled to match official PTT brand identity */}
+          {/* Brand Logo & Wordmark - Official Primatech PT. Prima Teknik Trada Identity */}
           <button
             onClick={() => handleNavClick('beranda')}
-            className="group flex items-center gap-2.5 sm:gap-3 text-left focus:outline-none cursor-pointer shrink-0"
+            className="group flex items-center text-left focus:outline-none cursor-pointer shrink-0 py-0.5"
+            aria-label="PT. Prima Teknik Trada Home"
           >
-            {/* Official PTT Rounded Badge */}
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] sm:rounded-xl bg-[#0c0e14] border-2 border-amber-500/85 flex items-center justify-center font-display font-black text-amber-500 text-sm sm:text-base tracking-wide group-hover:border-amber-400 group-hover:scale-105 transition-all shadow-md shrink-0">
-              PTT
-            </div>
-            <div className="flex flex-col">
-              <span
-                className={`font-display font-bold text-sm sm:text-base lg:text-[17px] tracking-tight transition-colors whitespace-nowrap leading-tight ${
-                  isDark ? 'text-white group-hover:text-amber-400' : 'text-slate-900 group-hover:text-amber-600'
-                }`}
-              >
-                PT. PRIMA TEKNIK TRADA
-              </span>
-              <span
-                className={`block text-[8px] sm:text-[9.5px] lg:text-[10px] font-mono tracking-[0.14em] sm:tracking-[0.2em] uppercase font-semibold transition-colors mt-0.5 whitespace-nowrap ${
-                  isDark ? 'text-neutral-400 group-hover:text-neutral-300' : 'text-slate-500 group-hover:text-slate-700'
-                }`}
-              >
-                SYSTEM INTEGRATOR &amp; AUTOMATION
-              </span>
-            </div>
+            <PrimatechLogo className="h-9 sm:h-11 w-auto max-w-[170px] sm:max-w-[210px] transition-transform duration-200 group-hover:scale-102" />
           </button>
 
           {/* Clean 4-Item Navigation Menu for PC & Tablet (Large) */}
@@ -122,19 +106,37 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Action Buttons: Phone + Language Switcher + Dark/Light Toggle + RFQ + Mobile Menu */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Direct Phone / Contact for Tablet and PC */}
-            <a
-              href={`tel:${COMPANY_INFO.phone.replace(/[^0-9+]/g, '')}`}
-              className={`hidden md:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition-colors whitespace-nowrap border ${
-                isDark
-                  ? 'text-neutral-300 hover:text-white bg-neutral-900/80 hover:bg-neutral-800 border-neutral-800'
-                  : 'text-slate-700 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 border-slate-200'
-              }`}
-              title={language === 'en' ? 'Call MM2100 Office' : 'Hubungi Kantor MM2100'}
-            >
-              <PhoneCall className={`w-3.5 h-3.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-              <span>(021) 8980378</span>
-            </a>
+            {/* LOGIN / LOGOUT Button for Desktop & Tablet */}
+            {!isAuthenticated ? (
+              <button
+                onClick={() => openAuthModal('login')}
+                className={`hidden md:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap border cursor-pointer ${
+                  isDark
+                    ? 'text-amber-300 hover:text-neutral-950 bg-amber-400/10 hover:bg-amber-400 border-amber-400/30 hover:border-amber-400 shadow-xs'
+                    : 'text-amber-800 hover:text-neutral-950 bg-amber-50 hover:bg-amber-400 border-amber-300 hover:border-amber-400 shadow-2xs'
+                }`}
+                title={language === 'en' ? 'Client Portal Login' : 'Login Portal Klien'}
+              >
+                <LogIn className="w-3.5 h-3.5 text-amber-500 group-hover:text-neutral-950" />
+                <span>LOGIN</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => openAuthModal()}
+                className={`hidden md:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap border cursor-pointer ${
+                  isDark
+                    ? 'text-rose-300 hover:text-white bg-rose-500/10 hover:bg-rose-600 border-rose-500/30 hover:border-rose-600 shadow-xs'
+                    : 'text-rose-700 hover:text-white bg-rose-50 hover:bg-rose-600 border-rose-200 hover:border-rose-600 shadow-2xs'
+                }`}
+                title={language === 'en' ? 'Click to view profile or Logout' : 'Klik untuk kelola akun atau Logout'}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="max-w-[90px] truncate">{user?.name.split(' ')[0]}</span>
+                <span className="opacity-40">/</span>
+                <LogOut className="w-3.5 h-3.5" />
+                <span>LOGOUT</span>
+              </button>
+            )}
 
             {/* Language Switcher (EN | ID) */}
             <LanguageToggle />
@@ -203,20 +205,54 @@ export const Navbar: React.FC<NavbarProps> = ({
                   isDark ? 'border-neutral-800/80' : 'border-slate-200'
                 }`}
               >
-                <a
-                  href={`tel:${COMPANY_INFO.phone.replace(/[^0-9+]/g, '')}`}
-                  className={`flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-xl border ${
-                    isDark
-                      ? 'text-neutral-200 bg-neutral-900/90 border-neutral-800'
-                      : 'text-slate-800 bg-slate-100 border-slate-200'
-                  }`}
-                >
-                  <PhoneCall className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-                  <span>
-                    {language === 'en' ? 'Call Office: ' : 'Hubungi Kantor: '}
-                    {COMPANY_INFO.phone}
-                  </span>
-                </a>
+                {!isAuthenticated ? (
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      openAuthModal('login');
+                    }}
+                    className={`flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                      isDark
+                        ? 'text-amber-300 bg-amber-400/15 hover:bg-amber-400 hover:text-neutral-950 border-amber-400/40'
+                        : 'text-amber-800 bg-amber-50 hover:bg-amber-400 hover:text-neutral-950 border-amber-300'
+                    }`}
+                  >
+                    <LogIn className="w-4 h-4 text-amber-500" />
+                    <span>LOGIN / SIGN UP</span>
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        openAuthModal();
+                      }}
+                      className={`px-3.5 py-2 rounded-xl text-xs flex items-center justify-between border cursor-pointer ${
+                        isDark
+                          ? 'bg-neutral-900 border-neutral-800 text-neutral-200'
+                          : 'bg-slate-100 border-slate-200 text-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="font-bold truncate">{user?.name}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-amber-500 truncate max-w-[120px]">
+                        {user?.company.replace('PT. ', '')}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl text-white bg-rose-600 hover:bg-rose-500 transition-all cursor-pointer shadow-md shadow-rose-600/20"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>LOGOUT</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

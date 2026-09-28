@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FileText,
   Send,
@@ -18,6 +18,7 @@ import { COMPANY_INFO } from '../data/company';
 import { MACHINES_DATA } from '../data/machines';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { getLocalizedMachine } from '../utils/localizedData';
 
 interface RfqFormProps {
@@ -36,13 +37,14 @@ export const RfqForm: React.FC<RfqFormProps> = ({
   const { theme } = useTheme();
   const { language, t } = useLanguage();
   const isDark = theme === 'dark';
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
-    companyName: '',
-    picName: '',
-    email: '',
-    phone: '',
-    industry: 'Automotive OEM 2W / 4W',
+    companyName: user?.company || '',
+    picName: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    industry: user?.sector || 'Automotive OEM 2W / 4W',
     material: 'SPCC / Mild Steel',
     tolerance: '±0.01 mm',
     targetTimeline: '1-2 Months',
@@ -50,6 +52,19 @@ export const RfqForm: React.FC<RfqFormProps> = ({
     drawingLink: '',
     notes: '',
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        companyName: prev.companyName || user.company,
+        picName: prev.picName || user.name,
+        email: prev.email || user.email,
+        phone: prev.phone || user.phone,
+        industry: prev.industry === 'Automotive OEM 2W / 4W' && user.sector ? user.sector : prev.industry,
+      }));
+    }
+  }, [user]);
 
   const [submitted, setSubmitted] = useState(false);
   const [rfqRefNumber, setRfqRefNumber] = useState('');

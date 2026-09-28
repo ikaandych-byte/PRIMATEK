@@ -4,6 +4,7 @@ import { MapPin, Phone, Mail, Globe, ArrowUp } from 'lucide-react';
 import { AppPage } from './Navbar';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { PrimatechLogo } from './PrimatechLogo';
 
 interface FooterProps {
   onSelectPage: (page: AppPage) => void;
@@ -38,17 +39,10 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
           
           {/* Brand Info (2 cols) */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="w-9 h-9 rounded-[10px] bg-[#0c0e14] border-2 border-amber-500/85 flex items-center justify-center font-display font-black text-amber-500 text-sm tracking-wide shadow-md shrink-0">
-                PTT
-              </div>
-              <div className="flex flex-col">
-                <span className="font-display font-bold text-base text-white tracking-tight leading-tight">
-                  {COMPANY_INFO.name}
-                </span>
-                <span className="text-[9px] font-mono tracking-[0.18em] uppercase text-neutral-400 font-semibold mt-0.5">
-                  SYSTEM INTEGRATOR &amp; AUTOMATION
-                </span>
+            <div className="space-y-2">
+              <PrimatechLogo forceDark={true} className="h-11 sm:h-12 w-auto max-w-[220px]" />
+              <div className="text-[9.5px] font-mono tracking-[0.18em] uppercase text-neutral-400 font-semibold pl-1">
+                SYSTEM INTEGRATOR &amp; AUTOMATION
               </div>
             </div>
             

@@ -12,6 +12,8 @@ import { FileText, CheckCircle2, MessageSquare } from 'lucide-react';
 import { COMPANY_INFO } from './data/company';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { AuthProvider } from './context/AuthContext';
+import { AuthModal } from './components/AuthModal';
 
 function AppContent() {
   const { theme } = useTheme();
@@ -256,6 +258,9 @@ function AppContent() {
         />
       )}
 
+      {/* Floating Login / Sign Up Modal */}
+      <AuthModal onNavigateToRfq={() => navigateToPage('tentang', 'kontak')} />
+
       {/* Sticky Bottom WhatsApp RFQ Shortcut Button on Mobile */}
       <div className="sm:hidden fixed bottom-4 right-4 z-40">
         <a
@@ -276,7 +281,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <AppContent />
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
   );
