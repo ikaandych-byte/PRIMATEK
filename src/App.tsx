@@ -12,19 +12,26 @@ import { FileText, CheckCircle2, MessageSquare } from 'lucide-react';
 import { COMPANY_INFO } from './data/company';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ProjectDataProvider } from './context/ProjectDataContext';
 import { AuthModal } from './components/AuthModal';
+import { BackendAdminPage } from './pages/BackendAdminPage';
+import { CustomerPortalPage } from './pages/CustomerPortalPage';
 
 function AppContent() {
   const { theme } = useTheme();
   const { language, t } = useLanguage();
   const isDark = theme === 'dark';
+  const { isAuthenticated } = useAuth();
 
   const [activePage, setActivePage] = useState<AppPage>(() => {
     const hash = window.location.hash.replace('#', '').toLowerCase();
     if (hash === 'katalog' || hash === 'spesifikasi') return 'katalog';
     if (hash === 'fasilitas') return 'fasilitas';
     if (hash === 'tentang' || hash === 'kontak') return 'tentang';
+    if (hash === 'admin' || hash === 'backend' || hash === 'backend-admin') return 'backend-admin';
+    if (hash === 'portal-customer' || hash === 'customer' || hash === 'orderan' || hash === 'customer-portal')
+      return 'customer-portal';
     return 'beranda';
   });
 
@@ -51,6 +58,10 @@ function AppContent() {
         setActivePage('fasilitas');
       } else if (hash === 'tentang' || hash === 'kontak') {
         setActivePage('tentang');
+      } else if (hash === 'admin' || hash === 'backend' || hash === 'backend-admin') {
+        setActivePage('backend-admin');
+      } else if (hash === 'portal-customer' || hash === 'customer' || hash === 'orderan' || hash === 'customer-portal') {
+        setActivePage('customer-portal');
       } else if (hash === 'beranda' || hash === '') {
         setActivePage('beranda');
       }
@@ -60,9 +71,22 @@ function AppContent() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  // Automatic redirect to homepage on logout if currently on dashboard
+  useEffect(() => {
+    if (!isAuthenticated && (activePage === 'backend-admin' || activePage === 'customer-portal')) {
+      setActivePage('beranda');
+      window.history.replaceState(null, '', window.location.pathname);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isAuthenticated, activePage]);
+
   const navigateToPage = (page: AppPage, targetSection?: string) => {
     setActivePage(page);
-    window.location.hash = page;
+    if (page === 'beranda') {
+      window.history.replaceState(null, '', window.location.pathname);
+    } else {
+      window.location.hash = page;
+    }
     if (targetSection) {
       setTimeout(() => {
         const el = document.getElementById(targetSection);
@@ -157,6 +181,24 @@ function AppContent() {
   };
 
   const rfqItemIds = rfqItems.map((i) => i.machineId);
+
+  if (activePage === 'backend-admin') {
+    return (
+      <BackendAdminPage
+        onBackToHome={() => navigateToPage('beranda')}
+        onOpenCustomerPortal={() => navigateToPage('customer-portal')}
+      />
+    );
+  }
+
+  if (activePage === 'customer-portal') {
+    return (
+      <CustomerPortalPage
+        onBackToHome={() => navigateToPage('beranda')}
+        onOpenBackendAdmin={() => navigateToPage('backend-admin')}
+      />
+    );
+  }
 
   return (
     <div
@@ -259,7 +301,12 @@ function AppContent() {
       )}
 
       {/* Floating Login / Sign Up Modal */}
-      <AuthModal onNavigateToRfq={() => navigateToPage('tentang', 'kontak')} />
+      <AuthModal
+        onNavigateHome={() => navigateToPage('beranda')}
+        onNavigateToRfq={() => navigateToPage('tentang', 'kontak')}
+        onOpenBackendAdmin={() => navigateToPage('backend-admin')}
+        onOpenCustomerPortal={() => navigateToPage('customer-portal')}
+      />
 
       {/* Sticky Bottom WhatsApp RFQ Shortcut Button on Mobile */}
       <div className="sm:hidden fixed bottom-4 right-4 z-40">
@@ -281,9 +328,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
+        <ProjectDataProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </ProjectDataProvider>
       </LanguageProvider>
     </ThemeProvider>
   );

@@ -7,7 +7,13 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { PrimatechLogo } from './PrimatechLogo';
 
-export type AppPage = 'beranda' | 'katalog' | 'fasilitas' | 'tentang';
+export type AppPage =
+  | 'beranda'
+  | 'katalog'
+  | 'fasilitas'
+  | 'tentang'
+  | 'backend-admin'
+  | 'customer-portal';
 
 interface NavbarProps {
   activePage: AppPage;
@@ -27,7 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { theme } = useTheme();
   const { language, t } = useLanguage();
   const isDark = theme === 'dark';
-  const { user, isAuthenticated, openAuthModal, logout } = useAuth();
+  const { user, isAuthenticated, isInternalStaff, openAuthModal, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -121,21 +127,36 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>LOGIN</span>
               </button>
             ) : (
-              <button
-                onClick={() => openAuthModal()}
-                className={`hidden md:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap border cursor-pointer ${
-                  isDark
-                    ? 'text-rose-300 hover:text-white bg-rose-500/10 hover:bg-rose-600 border-rose-500/30 hover:border-rose-600 shadow-xs'
-                    : 'text-rose-700 hover:text-white bg-rose-50 hover:bg-rose-600 border-rose-200 hover:border-rose-600 shadow-2xs'
-                }`}
-                title={language === 'en' ? 'Click to view profile or Logout' : 'Klik untuk kelola akun atau Logout'}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="max-w-[90px] truncate">{user?.name.split(' ')[0]}</span>
-                <span className="opacity-40">/</span>
-                <LogOut className="w-3.5 h-3.5" />
-                <span>LOGOUT</span>
-              </button>
+              <div className="hidden md:flex items-center gap-1.5">
+                <button
+                  onClick={() => onSelectPage(isInternalStaff ? 'backend-admin' : 'customer-portal')}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                    isInternalStaff
+                      ? 'border-red-500/40 bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white'
+                      : 'border-amber-400/40 bg-amber-400/10 text-amber-400 hover:bg-amber-400 hover:text-neutral-950'
+                  }`}
+                  title={isInternalStaff ? 'Buka Dashboard Backend Staff' : 'Buka Portal Monitoring Customer'}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>{isInternalStaff ? 'Dashboard Admin' : 'Orderan Saya'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    logout();
+                    onSelectPage('beranda');
+                  }}
+                  className={`inline-flex items-center gap-1 px-2.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap border cursor-pointer ${
+                    isDark
+                      ? 'text-rose-300 hover:text-white bg-rose-500/10 hover:bg-rose-600 border-rose-500/30 hover:border-rose-600'
+                      : 'text-rose-700 hover:text-white bg-rose-50 hover:bg-rose-600 border-rose-200 hover:border-rose-600 shadow-2xs'
+                  }`}
+                  title="Logout"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>LOGOUT</span>
+                </button>
+              </div>
             )}
 
             {/* Language Switcher (EN | ID) */}
@@ -244,9 +265,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <button
                       onClick={() => {
                         setMobileMenuOpen(false);
-                        logout();
+                        onSelectPage(isInternalStaff ? 'backend-admin' : 'customer-portal');
                       }}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl text-white bg-rose-600 hover:bg-rose-500 transition-all cursor-pointer shadow-md shadow-rose-600/20"
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                        isInternalStaff
+                          ? 'bg-red-600 hover:bg-red-500 text-white shadow-md shadow-red-600/20'
+                          : 'bg-amber-400 hover:bg-amber-300 text-neutral-950 shadow-md shadow-amber-400/20'
+                      }`}
+                    >
+                      <span>{isInternalStaff ? 'Masuk ke Dashboard Admin' : 'Buka Portal Orderan Saya'}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        logout();
+                        onSelectPage('beranda');
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold rounded-xl text-white bg-rose-700 hover:bg-rose-600 transition-all cursor-pointer"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>LOGOUT</span>
