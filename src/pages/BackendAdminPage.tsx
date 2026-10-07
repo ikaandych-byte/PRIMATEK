@@ -32,6 +32,8 @@ import {
   Send,
   Layers,
   CheckCheck,
+  Banknote,
+  EyeOff,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useProjectData } from '../context/ProjectDataContext';
@@ -50,13 +52,14 @@ import { EditStaffModal } from '../components/admin/EditStaffModal';
 import { EditCustomerModal } from '../components/admin/EditCustomerModal';
 import { EditProjectModal } from '../components/admin/EditProjectModal';
 import { ManageMilestonesModal } from '../components/admin/ManageMilestonesModal';
+import { FinanceControlSection } from '../components/admin/FinanceControlSection';
 
 interface BackendAdminPageProps {
   onBackToHome: () => void;
   onOpenCustomerPortal?: () => void;
 }
 
-type AdminTab = 'overview' | 'customers' | 'projects' | 'schedule' | 'gallery' | 'staff';
+type AdminTab = 'overview' | 'finance' | 'customers' | 'projects' | 'schedule' | 'gallery' | 'staff';
 
 const getDepartmentBadge = (dept?: string) => {
   switch (dept) {
@@ -115,6 +118,7 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [showStaffPasswords, setShowStaffPasswords] = useState<Record<string, boolean>>({});
 
   // Modal States
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -408,6 +412,15 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
           <nav className="flex space-x-1 sm:space-x-2 py-2">
             {[
               { id: 'overview', label: 'Ringkasan / KPI', icon: LayoutDashboard },
+              ...(isAdmin
+                ? [
+                    {
+                      id: 'finance',
+                      label: 'Keuangan & Rugi Laba',
+                      icon: Banknote,
+                    },
+                  ]
+                : []),
               { id: 'customers', label: `Data Customer (${customers.length})`, icon: Users },
               { id: 'projects', label: `Data Project (${projects.length})`, icon: FolderKanban },
               { id: 'schedule', label: 'Schedule & Progress', icon: CalendarClock },
@@ -683,6 +696,15 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* ======================= TAB: KEUANGAN & RUGI LABA (KHUSUS ADMINISTRATOR) ======================= */}
+        {activeTab === 'finance' && (
+          <FinanceControlSection
+            projects={projects}
+            isAdmin={isAdmin}
+            onUpdateProject={updateProject}
+          />
         )}
 
         {/* ======================= TAB 2: DATA CUSTOMER ======================= */}
@@ -1326,7 +1348,47 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                           </span>
                         </td>
                         <td className="py-3 px-4 font-mono font-bold text-slate-200">
-                          {staff.password}
+                          {isAdmin ? (
+                            <div className="flex items-center gap-2">
+                              <span>
+                                {showStaffPasswords[staff.id] !== false
+                                  ? staff.password
+                                  : '••••••••••••'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowStaffPasswords((prev) => ({
+                                    ...prev,
+                                    [staff.id]: prev[staff.id] === false ? true : false,
+                                  }))
+                                }
+                                className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-amber-400 cursor-pointer transition-colors"
+                                title={
+                                  showStaffPasswords[staff.id] !== false
+                                    ? 'Sembunyikan Password'
+                                    : 'Lihat Password Sistem'
+                                }
+                              >
+                                {showStaffPasswords[staff.id] !== false ? (
+                                  <EyeOff className="w-3.5 h-3.5" />
+                                ) : (
+                                  <Eye className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="tracking-widest font-mono text-neutral-500">••••••••••••</span>
+                              <span
+                                className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20"
+                                title="Login user staff departemen tidak diizinkan melihat password sistem"
+                              >
+                                <Lock className="w-2.5 h-2.5" />
+                                <span>Khusus Admin</span>
+                              </span>
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -1345,13 +1407,23 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                                 <span>Khusus Admin</span>
                               </span>
                             )}
-                            <button
-                              onClick={() => copyToClipboard(`${staff.email} | ${staff.password}`)}
-                              className="px-2.5 py-1 rounded-lg border border-neutral-700 hover:border-amber-400 text-neutral-300 hover:text-white cursor-pointer transition-colors"
-                              title="Salin Kredensial"
-                            >
-                              {copiedText === `${staff.email} | ${staff.password}` ? 'Tersalin!' : 'Salin'}
-                            </button>
+                            {isAdmin ? (
+                              <button
+                                onClick={() => copyToClipboard(`${staff.email} | ${staff.password}`)}
+                                className="px-2.5 py-1 rounded-lg border border-neutral-700 hover:border-amber-400 text-neutral-300 hover:text-white cursor-pointer transition-colors"
+                                title="Salin Kredensial Email & Password"
+                              >
+                                {copiedText === `${staff.email} | ${staff.password}` ? 'Tersalin!' : 'Salin'}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => copyToClipboard(staff.email)}
+                                className="px-2.5 py-1 rounded-lg border border-neutral-700 hover:border-amber-400 text-neutral-300 hover:text-white cursor-pointer transition-colors text-xs"
+                                title="Salin Email Karyawan"
+                              >
+                                {copiedText === staff.email ? 'Tersalin!' : 'Salin Email'}
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

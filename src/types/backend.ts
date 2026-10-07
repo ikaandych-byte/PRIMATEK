@@ -105,6 +105,37 @@ export interface DeliveryDetails {
   receivedDate?: string;
 }
 
+export interface ProjectFinancialItem {
+  // Cash Inflow (Termin Pembayaran)
+  downPaymentPercent: number; // default 50
+  downPaymentAmount: number;
+  downPaymentStatus: 'Received' | 'Pending' | 'Overdue';
+  downPaymentDate?: string;
+  finalPaymentPercent: number; // default 50
+  finalPaymentAmount: number;
+  finalPaymentStatus: 'Received' | 'Pending' | 'Not Invoiced';
+  finalPaymentDate?: string;
+
+  // Cost Outflow (HPP & Biaya Produksi Manufaktur)
+  materialCost: number; // Biaya Material (Baja, Sensor, Pneumatic, PLC, Rel, Bearing)
+  machiningCost: number; // Biaya Mesin CNC/Milling, Tooling & Listrik Pabrik
+  subconCost: number; // Biaya Subkontraktor (Hard Chrome, Anodize, Heat Treatment)
+  assemblyLaborCost: number; // Biaya Manpower, Perakitan & Quality Control
+  logisticsCost: number; // Biaya Ekspedisi, Packing Kayu & Delivery Lapangan
+  otherCost?: number; // Biaya Operasional / Konsumsi Lapangan
+
+  // Taxes (Perpajakan)
+  taxPpnPercent: number; // default 11 (PPN 11%)
+  taxPpnAmount?: number;
+  taxPph23Percent: number; // default 2 (PPh 23 Jasa Teknik 2%)
+  taxPph23Amount?: number;
+  fakturPajakNumber?: string;
+
+  // Internal Notes & Bank
+  bankAccountDestination?: string;
+  financeNotes?: string;
+}
+
 export interface ProjectItem {
   id: string;
   poNumber: string;
@@ -126,4 +157,5 @@ export interface ProjectItem {
   activityLogs: ActivityLogItem[];
   invoice?: InvoiceDetails;
   delivery?: DeliveryDetails;
+  financial?: ProjectFinancialItem;
 }
