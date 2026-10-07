@@ -47,22 +47,27 @@ interface ProjectDataContextType {
   updateMilestoneStatus: (
     projectId: string,
     milestoneId: string,
-    status: 'completed' | 'in-progress' | 'pending'
+    status: 'completed' | 'in-progress' | 'pending',
+    notes?: string,
+    actor?: string
   ) => void;
   // Photo Operations
   addProjectPhoto: (photo: Omit<ProjectPhoto, 'id' | 'uploadedAt'>) => void;
   deleteProjectPhoto: (photoId: string) => void;
   // Staff Operations
+  updateStaff: (staffId: string, data: Partial<InternalStaff>) => void;
   updateStaffPassword: (staffId: string, newPassword: string) => void;
+  // Schedule Operations
+  updateProjectMilestones: (projectId: string, milestones: ProjectMilestone[]) => void;
   // Helpers
   generateRandomPassword: (companyNameOrPrefix?: string) => string;
   getProjectsByCustomer: (customerEmailOrId: string) => ProjectItem[];
   resetToDefaults: () => void;
 }
 
-const STORAGE_STAFF_KEY = 'pttid_staff_accounts_v1';
+const STORAGE_STAFF_KEY = 'pttid_staff_accounts_v2';
 const STORAGE_CUSTOMERS_KEY = 'pttid_customers_data_v1';
-const STORAGE_PROJECTS_KEY = 'pttid_projects_data_v1';
+const STORAGE_PROJECTS_KEY = 'pttid_projects_data_v2';
 
 const ProjectDataContext = createContext<ProjectDataContextType | undefined>(undefined);
 
@@ -283,21 +288,92 @@ export const ProjectDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const updateMilestoneStatus = (
     projectId: string,
     milestoneId: string,
-    status: 'completed' | 'in-progress' | 'pending'
+    status: 'completed' | 'in-progress' | 'pending',
+    notes?: string,
+    actor?: string
   ) => {
     setProjects((prev) =>
       prev.map((p) => {
         if (p.id !== projectId) return p;
-        const updatedM = (p.milestones || []).map((m) =>
-          m.id === milestoneId
-            ? {
-                ...m,
-                status,
-                completedDate: status === 'completed' ? new Date().toISOString().split('T')[0] : m.completedDate,
-              }
-            : m
-        );
-        return { ...p, milestones: updatedM };
+        let milestoneTitle = '';
+        let milestoneDept = '';
+
+        const updatedM = (p.milestones || []).map((m) => {
+          if (m.id === milestoneId) {
+            milestoneTitle = m.title;
+            milestoneDept = m.department || '';
+            return {
+              ...m,
+              status,
+              notes: notes !== undefined ? notes : m.notes,
+              completedDate:
+                status === 'completed'
+                  ? new Date().toISOString().split('T')[0]
+                  : status === 'in-progress'
+                  ? undefined
+                  : m.completedDate,
+            };
+          }
+          return m;
+        });
+
+        // Calculate progress percentage based on completed milestones
+        const totalM = updatedM.length;
+        const completedM = updatedM.filter((m) => m.status === 'completed').length;
+        const newProgress = totalM > 0 ? Math.round((completedM / totalM) * 100) : p.progressPercent;
+        const isNowCompleted = newProgress >= 100;
+
+        // Activity log entry
+        const updatedLogs = [...(p.activityLogs || [])];
+        const displayActor = actor || (milestoneDept ? `Departemen ${milestoneDept}` : 'Staff Engineer');
+        updatedLogs.unshift({
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+          actor: displayActor,
+          action: `Milestone: ${status === 'completed' ? 'Selesai' : status === 'in-progress' ? 'Dikerjakan' : 'Pending'}`,
+          detail: `Tahapan "${milestoneTitle}" diperbarui ke status ${status}. ${notes ? `Catatan: ${notes}` : ''}`,
+        });
+
+        // Fallback invoice and delivery if completed
+        const defaultInvoice = p.invoice || {
+          invoiceNumber: `INV/PTT/${new Date().getFullYear()}/${p.poNumber.replace(/[^0-9]/g, '').slice(-4) || '1020'}`,
+          invoiceDate: new Date().toISOString().split('T')[0],
+          dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+          totalAmount: p.contractValue,
+          downPaymentPercent: 50,
+          downPaymentAmount: Math.round(p.contractValue * 0.5),
+          finalPaymentAmount: Math.round(p.contractValue * 0.5),
+          status: 'Paid Full',
+          bankName: 'Bank Central Asia (BCA)',
+          bankAccount: '542-089-7700',
+          accountHolder: 'PT. PRIMA TEKNIK TRADA',
+          paidAt: new Date().toISOString().split('T')[0],
+        };
+
+        const defaultDelivery = p.delivery || {
+          doNumber: `DO/PTT-LOG/${new Date().getFullYear()}/${p.poNumber.replace(/[^0-9]/g, '').slice(-4) || '088'}`,
+          deliveryDate: `${new Date().toISOString().split('T')[0]} 10:00 WIB`,
+          expedition: 'Truk Towing & Dedicated Flatbed PTT Logistics (Armada Internal)',
+          vehicleNumber: 'B 9821 PTT',
+          driverName: 'Sutrisno (PTT Logistics Lead)',
+          driverPhone: '+62 813-8890-1122',
+          deliveryAddress: p.customerName,
+          status: 'Installed & BAST Signed',
+          bastNumber: `BAST/${p.poNumber.replace(/[^0-9]/g, '').slice(-4) || '099'}/PTT`,
+          receivedBy: `${p.customerName} Representative`,
+          receivedDate: new Date().toISOString().split('T')[0],
+        };
+
+        return {
+          ...p,
+          milestones: updatedM,
+          progressPercent: newProgress,
+          status: isNowCompleted ? 'Completed' : (newProgress > 0 && p.status === 'Completed' ? 'Completed' : p.status),
+          actualCompletionDate: isNowCompleted ? (p.actualCompletionDate || new Date().toISOString().split('T')[0]) : p.actualCompletionDate,
+          activityLogs: updatedLogs,
+          invoice: isNowCompleted ? (p.invoice || defaultInvoice) : p.invoice,
+          delivery: isNowCompleted ? (p.delivery || defaultDelivery) : p.delivery,
+        };
       })
     );
   };
@@ -342,9 +418,37 @@ export const ProjectDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     );
   };
 
+  const updateStaff = (staffId: string, data: Partial<InternalStaff>) => {
+    setStaffAccounts((prev) =>
+      prev.map((s) => (s.id === staffId ? { ...s, ...data } : s))
+    );
+  };
+
   const updateStaffPassword = (staffId: string, newPassword: string) => {
     setStaffAccounts((prev) =>
       prev.map((s) => (s.id === staffId ? { ...s, password: newPassword } : s))
+    );
+  };
+
+  const updateProjectMilestones = (projectId: string, milestones: ProjectMilestone[]) => {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== projectId) return p;
+        return {
+          ...p,
+          milestones,
+          activityLogs: [
+            {
+              id: `log-${Date.now()}`,
+              timestamp: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+              actor: 'Administrator',
+              action: 'Milestone Disunting',
+              detail: `Urutan dan tahapan milestone pengerjaan project diperbarui oleh Administrator.`,
+            },
+            ...(p.activityLogs || []),
+          ],
+        };
+      })
     );
   };
 
@@ -384,8 +488,10 @@ export const ProjectDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         updateProjectProgress,
         addProjectMilestone,
         updateMilestoneStatus,
+        updateProjectMilestones,
         addProjectPhoto,
         deleteProjectPhoto,
+        updateStaff,
         updateStaffPassword,
         generateRandomPassword,
         getProjectsByCustomer,

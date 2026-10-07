@@ -20,6 +20,11 @@ import {
   ChevronRight,
   Eye,
   Download,
+  Truck,
+  Receipt,
+  Printer,
+  DollarSign,
+  Check,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useProjectData } from '../context/ProjectDataContext';
@@ -45,18 +50,28 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
   // State
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<ProjectPhoto | null>(null);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
+  const [finishModalTab, setFinishModalTab] = useState<'invoice' | 'delivery'>('invoice');
   const [newPasswordVal, setNewPasswordVal] = useState('');
   const [confirmPasswordVal, setConfirmPasswordVal] = useState('');
   const [passwordMsg, setPasswordMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Filter projects for the logged-in customer
+  // Filter projects for the logged-in customer and sort by newest order first
   const customerEmailOrId = user?.email || user?.id || '';
-  const myProjects = user?.userType === 'customer'
+  const rawProjects = user?.userType === 'customer'
     ? getProjectsByCustomer(customerEmailOrId)
     : projects; // if staff views this preview, show all projects
 
-  const [activeProjectId, setActiveProjectId] = useState<string>(myProjects[0]?.id || '');
+  // Sort by newest order first (startDate descending)
+  const myProjects = [...rawProjects].sort(
+    (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+  );
+
+  const [activeProjectId, setActiveProjectId] = useState<string>('');
   const activeProject = myProjects.find((p) => p.id === activeProjectId) || myProjects[0];
+  const isProjectFinished = Boolean(
+    activeProject && (activeProject.progressPercent >= 100 || activeProject.status === 'Completed')
+  );
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,11 +268,13 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
               {myProjects.map((p) => {
                 const isSelected = p.id === activeProject?.id;
+                const isDone = p.progressPercent >= 100 || p.status === 'Completed';
+
                 return (
                   <button
                     key={p.id}
                     onClick={() => setActiveProjectId(p.id)}
-                    className={`p-3.5 rounded-2xl border text-left min-w-[240px] sm:min-w-[280px] transition-all cursor-pointer shrink-0 ${
+                    className={`p-3.5 rounded-2xl border text-left min-w-[250px] sm:min-w-[290px] transition-all cursor-pointer shrink-0 ${
                       isSelected
                         ? isDark
                           ? 'bg-[#121826] border-red-500 shadow-md ring-1 ring-red-500/30'
@@ -269,14 +286,24 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
                   >
                     <div className="flex items-center justify-between text-[11px] font-mono mb-1">
                       <span className="font-bold text-amber-500">{p.poNumber}</span>
-                      <span className="font-extrabold text-slate-100">{p.progressPercent}%</span>
+                      {isDone ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3 h-3" /> Finish 100%
+                        </span>
+                      ) : (
+                        <span className="font-extrabold text-slate-100">{p.progressPercent}%</span>
+                      )}
                     </div>
                     <div className="text-xs font-bold font-display truncate text-slate-100">
                       {p.projectName}
                     </div>
                     <div className="mt-2 w-full bg-neutral-800 h-1.5 rounded-full overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-amber-400 to-red-600 h-full rounded-full"
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          isDone
+                            ? 'bg-emerald-500'
+                            : 'bg-gradient-to-r from-amber-400 to-red-600'
+                        }`}
                         style={{ width: `${p.progressPercent}%` }}
                       />
                     </div>
@@ -284,6 +311,66 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
                 );
               })}
             </div>
+
+            {/* Banner Finish (100% Selesai: Tampilkan Tagihan Invoice & Pengiriman) */}
+            {activeProject && isProjectFinished && (
+              <div
+                className={`p-5 sm:p-6 rounded-3xl border relative overflow-hidden transition-all ${
+                  isDark
+                    ? 'bg-gradient-to-r from-emerald-950/40 via-[#0d161d] to-[#0f141f] border-emerald-500/50 shadow-xl shadow-emerald-950/20'
+                    : 'bg-gradient-to-r from-emerald-50 via-teal-50 to-white border-emerald-400 shadow-lg'
+                }`}
+              >
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500" />
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-neutral-950 flex items-center justify-center font-black text-2xl shadow-md shadow-emerald-500/30 shrink-0">
+                      ✓
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 uppercase tracking-wide">
+                          STATUS 100% SELESAI
+                        </span>
+                        <span className="text-xs text-neutral-400 font-mono">
+                          Factory Acceptance Test &amp; Commissioning Lulus
+                        </span>
+                      </div>
+                      <h4 className="text-base sm:text-lg font-black font-display text-slate-100">
+                        Orderan Telah Selesai 100% &amp; Siap / Telah Diserahterimakan
+                      </h4>
+                      <p className="text-xs text-neutral-300 max-w-xl leading-relaxed">
+                        Faktur invoice pelunasan pembayaran PT. Prima Teknik Trada dan dokumen surat jalan proses pengiriman barang (DO &amp; BAST) telah resmi diterbitkan.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Tombol Finish */}
+                  <div className="flex flex-wrap sm:flex-nowrap gap-2.5 shrink-0 w-full sm:w-auto">
+                    <button
+                      onClick={() => {
+                        setFinishModalTab('invoice');
+                        setIsFinishModalOpen(true);
+                      }}
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-neutral-950 font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/30 cursor-pointer hover:scale-105 active:scale-95"
+                    >
+                      <Receipt className="w-4 h-4 text-neutral-950" />
+                      <span>Tagihan Invoice</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFinishModalTab('delivery');
+                        setIsFinishModalOpen(true);
+                      }}
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500 hover:text-neutral-950 text-emerald-300 font-black text-xs uppercase tracking-wider transition-all cursor-pointer hover:scale-105 active:scale-95"
+                    >
+                      <Truck className="w-4 h-4" />
+                      <span>Proses Pengiriman</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Active Project Detail Section */}
             {activeProject && (
@@ -413,6 +500,103 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
                       ))}
                     </div>
                   </div>
+
+                  {/* Dokumen Tagihan Invoice & Pengiriman Barang (Jika Status 100% Selesai) */}
+                  {isProjectFinished && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Card Tagihan Invoice */}
+                      <div
+                        className={`p-5 sm:p-6 rounded-3xl border ${
+                          isDark ? 'bg-[#0f141f] border-emerald-500/30' : 'bg-white border-emerald-300 shadow-sm'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs font-mono">
+                            <Receipt className="w-4 h-4" />
+                            <span>TAGIHAN INVOICE RESMI</span>
+                          </div>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                            {activeProject.invoice?.status || 'Paid Full'}
+                          </span>
+                        </div>
+                        <div className="space-y-1.5 text-xs font-mono">
+                          <div className="flex justify-between text-neutral-400">
+                            <span>No. Invoice:</span>
+                            <span className="font-bold text-slate-200">
+                              {activeProject.invoice?.invoiceNumber || 'INV/PTT/2026/09-0781'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-neutral-400">
+                            <span>Nilai Kontrak:</span>
+                            <span className="font-bold text-emerald-400">
+                              {formatRupiah(activeProject.contractValue)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-neutral-400">
+                            <span>Rekening PTT:</span>
+                            <span className="text-slate-300">BCA 542-089-7700</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setFinishModalTab('invoice');
+                            setIsFinishModalOpen(true);
+                          }}
+                          className="w-full mt-4 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500 border border-emerald-500/30 text-emerald-400 hover:text-neutral-950 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                        >
+                          <Receipt className="w-3.5 h-3.5" />
+                          <span>Rincian Tagihan Invoice Lengkap →</span>
+                        </button>
+                      </div>
+
+                      {/* Card Pengiriman Barang */}
+                      <div
+                        className={`p-5 sm:p-6 rounded-3xl border ${
+                          isDark ? 'bg-[#0f141f] border-blue-500/30' : 'bg-white border-blue-300 shadow-sm'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2 text-blue-400 font-bold text-xs font-mono">
+                            <Truck className="w-4 h-4" />
+                            <span>SURAT JALAN &amp; DO</span>
+                          </div>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/15 border border-blue-500/30 text-blue-400">
+                            Delivered &amp; BAST
+                          </span>
+                        </div>
+                        <div className="space-y-1.5 text-xs font-mono">
+                          <div className="flex justify-between text-neutral-400">
+                            <span>No. Surat Jalan:</span>
+                            <span className="font-bold text-slate-200">
+                              {activeProject.delivery?.doNumber || 'DO/PTT-LOG/2026/09-088'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-neutral-400">
+                            <span>Armada PTT:</span>
+                            <span className="text-slate-300 truncate max-w-[150px]">
+                              {activeProject.delivery?.expedition || 'Truk Towing PTT Logistics'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-neutral-400">
+                            <span>Driver:</span>
+                            <span className="text-slate-300">
+                              {activeProject.delivery?.driverName || 'Sutrisno'}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setFinishModalTab('delivery');
+                            setIsFinishModalOpen(true);
+                          }}
+                          className="w-full mt-4 py-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500 border border-blue-500/30 text-blue-400 hover:text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                        >
+                          <Truck className="w-3.5 h-3.5" />
+                          <span>Rincian Surat Jalan &amp; BAST →</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Activity Log from Engineering Team */}
                   {activeProject.activityLogs && activeProject.activityLogs.length > 0 && (
@@ -642,6 +826,340 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
               </div>
               <h3 className="text-base font-bold font-display">{selectedPhotoPreview.title}</h3>
               <p className="text-xs text-neutral-300">{selectedPhotoPreview.caption}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================= MODAL: FINISH DOKUMEN (TAGIHAN INVOICE & PENGIRIMAN) ======================= */}
+      {isFinishModalOpen && activeProject && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto"
+          onClick={() => setIsFinishModalOpen(false)}
+        >
+          <div
+            className={`relative w-full max-w-3xl rounded-3xl border shadow-2xl overflow-hidden my-6 transition-all flex flex-col max-h-[92vh] ${
+              isDark ? 'bg-[#0f141f] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Ribbon */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 shrink-0" />
+
+            {/* Header */}
+            <div className="p-5 sm:p-6 border-b border-inherit flex items-start justify-between gap-4 shrink-0">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                    {activeProject.poNumber}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300">
+                    ✓ Selesai 100% (Finish)
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-black font-display text-slate-100">
+                  Dokumen Serah Terima &amp; Faktur Tagihan
+                </h3>
+                <p className="text-xs text-neutral-400">
+                  {activeProject.projectName} — {activeProject.customerName}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsFinishModalOpen(false)}
+                className="p-1.5 rounded-xl border border-neutral-800 hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Sub-tabs: Invoice vs Delivery */}
+            <div className="px-6 pt-3 pb-2 border-b border-inherit flex gap-2 shrink-0">
+              <button
+                onClick={() => setFinishModalTab('invoice')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  finishModalTab === 'invoice'
+                    ? 'bg-emerald-500 text-neutral-950 shadow-md shadow-emerald-500/20'
+                    : isDark
+                    ? 'bg-neutral-900 text-neutral-400 hover:text-white'
+                    : 'bg-slate-100 text-slate-600 hover:text-slate-950'
+                }`}
+              >
+                <Receipt className="w-3.5 h-3.5" />
+                <span>Tagihan Invoice Pembayaran</span>
+              </button>
+
+              <button
+                onClick={() => setFinishModalTab('delivery')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  finishModalTab === 'delivery'
+                    ? 'bg-emerald-500 text-neutral-950 shadow-md shadow-emerald-500/20'
+                    : isDark
+                    ? 'bg-neutral-900 text-neutral-400 hover:text-white'
+                    : 'bg-slate-100 text-slate-600 hover:text-slate-950'
+                }`}
+              >
+                <Truck className="w-3.5 h-3.5" />
+                <span>Proses Pengiriman &amp; Surat Jalan (DO)</span>
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="p-6 overflow-y-auto space-y-6 scrollbar-thin">
+              {finishModalTab === 'invoice' ? (
+                /* TAB 1: INVOICE PEMBAYARAN */
+                <div className="space-y-6">
+                  {/* Letterhead */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl border border-inherit bg-neutral-900/40">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <PrimatechLogo className="h-7 w-auto max-w-[140px]" />
+                        <span className="text-[10px] font-mono uppercase font-bold text-amber-500 px-1.5 py-0.5 rounded bg-amber-500/10">
+                          Official Billing
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-400 font-mono">
+                        PT. PRIMA TEKNIK TRADA • Industrial Machinery &amp; Automation
+                      </p>
+                      <p className="text-[10px] text-neutral-500">
+                        Kawasan Industri MM2100 Cibitung, Bekasi | Telp: +62 21-8980378
+                      </p>
+                    </div>
+
+                    <div className="text-left sm:text-right font-mono text-xs space-y-1">
+                      <div className="text-neutral-400">NO. FAKTUR / INVOICE:</div>
+                      <div className="font-extrabold text-amber-400 text-sm">
+                        {activeProject.invoice?.invoiceNumber || `INV/PTT/2026/09-${activeProject.poNumber.slice(-4)}`}
+                      </div>
+                      <div className="text-[11px] text-neutral-400">
+                        Tanggal: {activeProject.invoice?.invoiceDate || '2026-09-15'}
+                      </div>
+                      <div className="text-[11px] text-neutral-400">
+                        Jatuh Tempo: {activeProject.invoice?.dueDate || '2026-10-15'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bill To & PO */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl border border-inherit text-xs font-mono">
+                    <div>
+                      <span className="text-neutral-400 text-[10px] uppercase font-bold block mb-1">
+                        Ditagihkan Kepada (Customer):
+                      </span>
+                      <div className="font-bold text-slate-100 text-sm">{activeProject.customerName}</div>
+                      <div className="text-neutral-300 mt-0.5">{user?.companyAddress || 'Kawasan Industri Cikarang Barat / Cibitung'}</div>
+                      <div className="text-neutral-400 text-[11px] mt-1">
+                        UP: {user?.name || 'Ir. Hendra Wijaya'} ({user?.phone || '+62 812-8899-2341'})
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-neutral-400 text-[10px] uppercase font-bold block mb-1">
+                        Referensi Pesanan / PO:
+                      </span>
+                      <div className="text-amber-400 font-bold">{activeProject.poNumber}</div>
+                      <div className="text-neutral-300 mt-1">Kategori: {activeProject.category}</div>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 mt-2">
+                        <CheckCircle2 className="w-3 h-3" /> Status: LUNAS / PAID FULL
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Items Table */}
+                  <div className="rounded-xl border border-inherit overflow-hidden">
+                    <table className="w-full text-left text-xs font-mono">
+                      <thead className="bg-neutral-900/80 border-b border-inherit text-neutral-400 text-[10px] uppercase">
+                        <tr>
+                          <th className="p-3">Deskripsi Pekerjaan Manufaktur</th>
+                          <th className="p-3 text-center">Qty</th>
+                          <th className="p-3 text-right">Nominal</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-inherit">
+                        <tr>
+                          <td className="p-3">
+                            <div className="font-bold text-slate-100">{activeProject.projectName}</div>
+                            <div className="text-[11px] text-neutral-400 mt-0.5">{activeProject.description}</div>
+                          </td>
+                          <td className="p-3 text-center">1 Unit</td>
+                          <td className="p-3 text-right font-bold text-slate-100">
+                            {formatRupiah(activeProject.contractValue)}
+                          </td>
+                        </tr>
+                        <tr className="bg-neutral-900/20">
+                          <td className="p-2.5 pl-6 text-neutral-300">
+                            • Termin 1: Down Payment (50%) - Telah Diterima
+                          </td>
+                          <td className="p-2.5 text-center text-emerald-400 font-bold">LUNAS</td>
+                          <td className="p-2.5 text-right text-neutral-300">
+                            {formatRupiah(activeProject.contractValue * 0.5)}
+                          </td>
+                        </tr>
+                        <tr className="bg-neutral-900/20">
+                          <td className="p-2.5 pl-6 text-neutral-300">
+                            • Termin 2: Pelunasan Akhir FAT (50%) - Telah Diterima
+                          </td>
+                          <td className="p-2.5 text-center text-emerald-400 font-bold">LUNAS</td>
+                          <td className="p-2.5 text-right text-neutral-300">
+                            {formatRupiah(activeProject.contractValue * 0.5)}
+                          </td>
+                        </tr>
+                      </tbody>
+                      <tfoot className="border-t-2 border-inherit bg-neutral-900/60 font-bold">
+                        <tr>
+                          <td colSpan={2} className="p-3 text-right uppercase text-neutral-400">
+                            Total Tagihan &amp; Pelunasan:
+                          </td>
+                          <td className="p-3 text-right text-emerald-400 text-sm">
+                            {formatRupiah(activeProject.contractValue)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  {/* Bank Account Info & Paid Stamp */}
+                  <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1 text-xs">
+                      <span className="font-bold text-emerald-400 font-mono text-[11px]">
+                        REKENING RESMI PERUSAHAAN (BCA):
+                      </span>
+                      <div className="font-mono text-slate-200">
+                        Bank Central Asia (BCA) KCP MM2100 Cikarang
+                      </div>
+                      <div className="font-mono font-bold text-amber-400">
+                        No. Rek: 542-089-7700 | a.n. PT. PRIMA TEKNIK TRADA
+                      </div>
+                    </div>
+
+                    <div className="border border-emerald-500/40 rounded-xl p-2.5 text-center bg-emerald-500/10">
+                      <div className="text-[10px] font-mono text-emerald-400 uppercase font-bold">
+                        VERIFIKASI FINANCE PTT
+                      </div>
+                      <div className="text-xs font-black text-emerald-300 font-mono">
+                        LUNAS (PAID IN FULL)
+                      </div>
+                      <div className="text-[9px] text-neutral-400 font-mono mt-0.5">
+                        {activeProject.invoice?.paidAt || '2026-09-20'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* TAB 2: PROSES PENGIRIMAN & SURAT JALAN (DO) */
+                <div className="space-y-6">
+                  {/* DO Letterhead */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl border border-inherit bg-neutral-900/40">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Truck className="w-5 h-5 text-blue-400" />
+                        <h4 className="text-base font-black font-display text-slate-100">
+                          SURAT JALAN &amp; DELIVERY ORDER (DO)
+                        </h4>
+                      </div>
+                      <p className="text-[11px] text-neutral-400 font-mono">
+                        Divisi Logistik &amp; Ekspedisi PT. Prima Teknik Trada
+                      </p>
+                    </div>
+
+                    <div className="text-left sm:text-right font-mono text-xs space-y-1">
+                      <div className="text-neutral-400">NO. SURAT JALAN:</div>
+                      <div className="font-bold text-amber-400">
+                        {activeProject.delivery?.doNumber || 'DO/PTT-LOG/2026/09-088'}
+                      </div>
+                      <div className="text-[11px] text-neutral-400">
+                        No. BAST: {activeProject.delivery?.bastNumber || 'BAST/AHM-PTT/2026/09-142'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Logistics & Driver Details */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl border border-inherit text-xs font-mono">
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-neutral-400 text-[10px] uppercase block">Armada Angkutan:</span>
+                        <div className="font-bold text-slate-100">
+                          {activeProject.delivery?.expedition || 'Truk Towing & Flatbed Dedicated PTT Logistics'}
+                        </div>
+                        <div className="text-amber-400 mt-0.5">
+                          Plat Nomor: {activeProject.delivery?.vehicleNumber || 'B 9821 PTT'}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-neutral-400 text-[10px] uppercase block">Driver / Pengawal Unit:</span>
+                        <div className="text-slate-200">
+                          {activeProject.delivery?.driverName || 'Sutrisno (PTT Logistics Lead)'}
+                        </div>
+                        <div className="text-neutral-400 text-[11px]">
+                          Kontak: {activeProject.delivery?.driverPhone || '+62 813-8890-1122'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-neutral-400 text-[10px] uppercase block">Tujuan Pengiriman:</span>
+                        <div className="text-slate-200">
+                          {activeProject.delivery?.deliveryAddress || 'PT. Astra Honda Motor Plant 3 Cikarang Barat, MM2100 Blok LL'}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-neutral-400 text-[10px] uppercase block">Penerima &amp; Tanda Tangan:</span>
+                        <div className="text-emerald-400 font-bold">
+                          {activeProject.delivery?.receivedBy || 'Ir. Hendra Wijaya (Lead Tooling AHM)'}
+                        </div>
+                        <div className="text-neutral-400 text-[11px]">
+                          Tanggal Terima: {activeProject.delivery?.receivedDate || '2026-09-16'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4-Stage Delivery Tracking Steps */}
+                  <div className="p-4 rounded-2xl border border-inherit space-y-3">
+                    <span className="text-xs font-bold font-mono uppercase text-blue-400">
+                      Tracking Tahapan Proses Pengiriman:
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-1">
+                      {[
+                        { title: '1. QC & Packing', desc: 'Selesai di Workshop PTT' },
+                        { title: '2. Loading Flatbed', desc: 'Armada Siap Berangkat' },
+                        { title: '3. Ekspedisi', desc: 'Transit ke Plant Klien' },
+                        { title: '4. BAST Signing', desc: 'Terpasang & Diterima' },
+                      ].map((step, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-1 text-xs"
+                        >
+                          <div className="flex items-center gap-1.5 text-emerald-400 font-bold font-mono">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>{step.title}</span>
+                          </div>
+                          <p className="text-[11px] text-neutral-400">{step.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer with Print and Close */}
+            <div className="p-4 sm:p-5 border-t border-inherit flex items-center justify-between shrink-0 bg-neutral-900/20">
+              <button
+                onClick={() => window.print()}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-700 hover:border-white text-xs font-bold cursor-pointer transition-colors text-neutral-200 hover:text-white"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Cetak / Simpan Dokumen</span>
+              </button>
+
+              <button
+                onClick={() => setIsFinishModalOpen(false)}
+                className="px-5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-xs cursor-pointer transition-colors"
+              >
+                Tutup Dokumen
+              </button>
             </div>
           </div>
         </div>

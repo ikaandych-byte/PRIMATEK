@@ -30,6 +30,8 @@ import {
   Check,
   Sliders,
   Send,
+  Layers,
+  CheckCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useProjectData } from '../context/ProjectDataContext';
@@ -43,12 +45,43 @@ import {
   InternalStaff,
 } from '../types/backend';
 
+import { ProjectDetailModal } from '../components/admin/ProjectDetailModal';
+import { EditStaffModal } from '../components/admin/EditStaffModal';
+import { EditCustomerModal } from '../components/admin/EditCustomerModal';
+import { EditProjectModal } from '../components/admin/EditProjectModal';
+import { ManageMilestonesModal } from '../components/admin/ManageMilestonesModal';
+
 interface BackendAdminPageProps {
   onBackToHome: () => void;
   onOpenCustomerPortal?: () => void;
 }
 
 type AdminTab = 'overview' | 'customers' | 'projects' | 'schedule' | 'gallery' | 'staff';
+
+const getDepartmentBadge = (dept?: string) => {
+  switch (dept) {
+    case 'Design':
+      return { label: '1. Design', color: 'bg-purple-500/15 border-purple-500/30 text-purple-400' };
+    case 'Manufacturing Process':
+      return { label: '2. Mfg Process', color: 'bg-orange-500/15 border-orange-500/30 text-orange-400' };
+    case 'Purchasing':
+      return { label: '3. Purchasing', color: 'bg-amber-500/15 border-amber-500/30 text-amber-400' };
+    case 'Quality':
+      return { label: '4. Quality', color: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' };
+    case 'Production':
+      return { label: '5. Production', color: 'bg-teal-500/15 border-teal-500/30 text-teal-400' };
+    case 'Assembly':
+      return { label: '6. Assembly', color: 'bg-blue-500/15 border-blue-500/30 text-blue-400' };
+    case 'PPIC':
+      return { label: '7. PPIC', color: 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400' };
+    case 'General Admin':
+      return { label: '8. General Admin', color: 'bg-slate-500/15 border-slate-500/30 text-slate-300' };
+    case 'Executive Management':
+      return { label: 'Administrator', color: 'bg-red-500/15 border-red-500/30 text-red-400' };
+    default:
+      return { label: dept || 'Engineering', color: 'bg-neutral-800 border-neutral-700 text-neutral-300' };
+  }
+};
 
 export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
   onBackToHome,
@@ -67,8 +100,11 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
     updateProject,
     deleteProject,
     updateProjectProgress,
+    updateMilestoneStatus,
     addProjectPhoto,
     deleteProjectPhoto,
+    updateStaff,
+    updateProjectMilestones,
     generateRandomPassword,
   } = useProjectData();
 
@@ -86,6 +122,10 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
   const [isAddPhotoOpen, setIsAddPhotoOpen] = useState(false);
   const [selectedProjectForDetail, setSelectedProjectForDetail] = useState<ProjectItem | null>(null);
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<ProjectPhoto | null>(null);
+  const [editingStaff, setEditingStaff] = useState<InternalStaff | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<CustomerAccount | null>(null);
+  const [editingProject, setEditingProject] = useState<ProjectItem | null>(null);
+  const [editingMilestoneProject, setEditingMilestoneProject] = useState<ProjectItem | null>(null);
 
   // New Customer Form State
   const [newCustForm, setNewCustForm] = useState({
@@ -474,7 +514,14 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                   </div>
                 </div>
                 <div className="text-lg sm:text-xl font-black font-display truncate">
-                  {formatRupiah(totalContractVal)}
+                  {isAdmin ? (
+                    formatRupiah(totalContractVal)
+                  ) : (
+                    <span className="text-xs font-mono text-neutral-400 flex items-center gap-1.5 font-bold">
+                      <Lock className="w-3.5 h-3.5 text-amber-500" />
+                      <span>[Khusus Administrator]</span>
+                    </span>
+                  )}
                 </div>
                 <div className="mt-2 text-xs text-neutral-400">
                   <span>{completedProjects} Project selesai &amp; serah terima</span>
@@ -495,13 +542,15 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                     <h3 className="text-base font-bold font-display">Status Pengerjaan Project Terkini</h3>
                     <p className="text-xs text-neutral-400">Pantau progres manufaktur dan milestone tim permesinan</p>
                   </div>
-                  <button
-                    onClick={() => setIsAddProjectOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md shadow-red-600/20"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Project Baru</span>
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setIsAddProjectOpen(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md shadow-red-600/20"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Project Baru</span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="space-y-4">
@@ -664,13 +713,15 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                   />
                 </div>
 
-                <button
-                  onClick={() => setIsAddCustomerOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow-md shadow-red-600/20 cursor-pointer transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Tambah Customer</span>
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setIsAddCustomerOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow-md shadow-red-600/20 cursor-pointer transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Tambah Customer</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -765,17 +816,34 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                           {custProjects.length} Project Terhubung
                         </span>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              if (confirm(`Hapus data customer ${cust.companyName}?`)) {
-                                deleteCustomer(cust.id);
-                              }
-                            }}
-                            className="text-red-400 hover:text-red-300 p-1 cursor-pointer"
-                            title="Hapus Customer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {isAdmin ? (
+                            <>
+                              <button
+                                onClick={() => setEditingCustomer(cust)}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-neutral-950 font-bold text-xs transition-colors cursor-pointer"
+                                title="Edit Data Pelanggan & Akun Klien (Khusus Administrator)"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Hapus data customer ${cust.companyName}?`)) {
+                                    deleteCustomer(cust.id);
+                                  }
+                                }}
+                                className="text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-500/10 cursor-pointer transition-colors"
+                                title="Hapus Customer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-[10px] font-mono text-neutral-500 flex items-center gap-1 px-2 py-0.5 rounded border border-neutral-800">
+                              <Lock className="w-3 h-3 text-neutral-500" />
+                              <span>View Only</span>
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -814,13 +882,15 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                   <option value="Completed">Completed</option>
                 </select>
 
-                <button
-                  onClick={() => setIsAddProjectOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow-md shadow-red-600/20 cursor-pointer transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Buat Project Baru</span>
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setIsAddProjectOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow-md shadow-red-600/20 cursor-pointer transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Buat Project Baru</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -862,9 +932,16 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                       <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-3 shrink-0">
                         <div className="text-left lg:text-right">
                           <span className="text-[11px] font-mono text-neutral-400 block">Nilai Kontrak:</span>
-                          <span className="text-sm sm:text-base font-black font-display text-emerald-400">
-                            {formatRupiah(proj.contractValue)}
-                          </span>
+                          {isAdmin ? (
+                            <span className="text-sm sm:text-base font-black font-display text-emerald-400">
+                              {formatRupiah(proj.contractValue)}
+                            </span>
+                          ) : (
+                            <span className="text-xs font-mono text-neutral-500 flex items-center gap-1 font-bold">
+                              <Lock className="w-3 h-3 text-amber-500" />
+                              <span>[Khusus Administrator]</span>
+                            </span>
+                          )}
                         </div>
 
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-red-500/15 border border-red-500/30 text-red-400">
@@ -893,7 +970,18 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                         <span className="font-semibold text-slate-200">{proj.targetCompletionDate}</span>
                       </div>
 
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2 flex-wrap">
+                        {isAdmin && (
+                          <button
+                            onClick={() => setEditingProject(proj)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-neutral-950 font-bold text-xs cursor-pointer shadow-xs transition-all"
+                            title="Edit Data Project & Manufaktur (Khusus Administrator)"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+                        )}
+
                         <button
                           onClick={() => {
                             setSelectedProjectForProgress(proj);
@@ -954,51 +1042,134 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                     </div>
 
                     {/* Milestone Timeline */}
-                    <div className="space-y-3 pt-2">
-                      {proj.milestones.map((m, idx) => (
-                        <div key={m.id} className="flex items-start gap-2.5 text-xs">
-                          <div className="mt-0.5">
-                            {m.status === 'completed' ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                            ) : m.status === 'in-progress' ? (
-                              <Clock className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
-                            ) : (
-                              <div className="w-4 h-4 rounded-full border border-neutral-600 flex items-center justify-center text-[9px] text-neutral-500">
-                                {idx + 1}
+                    <div className="space-y-3.5 pt-2">
+                      {proj.milestones.map((m, idx) => {
+                        const deptBadge = getDepartmentBadge(m.department);
+                        const canDepartmentEdit =
+                          isAdmin ||
+                          (user?.department && m.department && user.department.toLowerCase() === m.department.toLowerCase()) ||
+                          !m.department;
+
+                        return (
+                          <div
+                            key={m.id}
+                            className={`p-3 rounded-xl border text-xs transition-all ${
+                              isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-slate-50 border-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <div className="mt-0.5 shrink-0">
+                                {m.status === 'completed' ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                ) : m.status === 'in-progress' ? (
+                                  <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
+                                ) : (
+                                  <div className="w-4 h-4 rounded-full border border-neutral-600 flex items-center justify-center text-[9px] text-neutral-500 font-mono">
+                                    {idx + 1}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div
-                              className={`font-semibold ${
-                                m.status === 'completed'
-                                  ? 'text-neutral-300'
-                                  : m.status === 'in-progress'
-                                  ? 'text-amber-400'
-                                  : 'text-neutral-500'
-                              }`}
-                            >
-                              {m.title}
+
+                              <div className="flex-1 space-y-1">
+                                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                  <span
+                                    className={`font-semibold ${
+                                      m.status === 'completed'
+                                        ? 'text-neutral-300'
+                                        : m.status === 'in-progress'
+                                        ? 'text-amber-400'
+                                        : 'text-neutral-500'
+                                    }`}
+                                  >
+                                    {m.title}
+                                  </span>
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${deptBadge.color}`}>
+                                    {deptBadge.label}
+                                  </span>
+                                </div>
+
+                                <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] font-mono text-neutral-400">
+                                  <span>{m.completedDate ? `Selesai: ${m.completedDate}` : `Target: ${m.targetDate}`}</span>
+                                  {m.department && <span className="text-amber-500/80">Otorisasi: Dept. {m.department}</span>}
+                                </div>
+
+                                {m.notes && (
+                                  <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed bg-black/20 p-2 rounded-lg border border-inherit">
+                                    {m.notes}
+                                  </p>
+                                )}
+
+                                {/* Department / Admin Milestone Status Updater */}
+                                {canDepartmentEdit && (
+                                  <div className="flex flex-wrap items-center gap-1.5 pt-2 mt-1 border-t border-inherit">
+                                    <span className="text-[10px] font-mono text-neutral-400">Update Status:</span>
+                                    {(['pending', 'in-progress', 'completed'] as const).map((st) => (
+                                      <button
+                                        key={st}
+                                        type="button"
+                                        onClick={() => {
+                                          const notePrompt = prompt(
+                                            `Update Tahapan "${m.title}" (${m.department || user?.department})\nCatatan progres dari tim lapangan:`,
+                                            m.notes || ''
+                                          );
+                                          if (notePrompt !== null) {
+                                            updateMilestoneStatus(
+                                              proj.id,
+                                              m.id,
+                                              st,
+                                              notePrompt,
+                                              `${user?.name || 'Staff'} (${user?.department || m.department || 'Dept'})`
+                                            );
+                                          }
+                                        }}
+                                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer transition-all ${
+                                          m.status === st
+                                            ? st === 'completed'
+                                              ? 'bg-emerald-500 text-neutral-950 shadow-xs'
+                                              : st === 'in-progress'
+                                              ? 'bg-amber-400 text-neutral-950 shadow-xs'
+                                              : 'bg-neutral-700 text-white'
+                                            : isDark
+                                            ? 'border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800'
+                                            : 'border border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                        }`}
+                                      >
+                                        {st === 'completed' ? '✓ Selesai' : st === 'in-progress' ? '⚡ Proses' : '○ Pending'}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            {m.notes && <div className="text-[11px] text-neutral-400 mt-0.5">{m.notes}</div>}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Button to update progress */}
-                  <div className="mt-5 pt-4 border-t border-inherit">
+                  {/* Actions for Schedule & Milestones */}
+                  <div className="mt-5 pt-4 border-t border-inherit space-y-2">
+                    {isAdmin && (
+                      <button
+                        onClick={() => setEditingMilestoneProject(proj)}
+                        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500 text-purple-400 hover:text-white font-bold text-xs transition-all cursor-pointer shadow-xs"
+                        title="Edit Urutan & Tahapan Milestone Pengerjaan (Khusus Administrator)"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>Edit Urutan &amp; Tahapan Milestone</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={() => {
                         setSelectedProjectForProgress(proj);
                         setNewProgressVal(proj.progressPercent);
                         setNewStatusVal(proj.status);
                       }}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-all shadow-md shadow-red-600/20 cursor-pointer"
+                      className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-all shadow-md shadow-red-600/20 cursor-pointer"
                     >
                       <Sliders className="w-3.5 h-3.5" />
-                      <span>Update Schedule &amp; Progress</span>
+                      <span>Update Persentase &amp; Status Global</span>
                     </button>
                   </div>
                 </div>
@@ -1111,7 +1282,8 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                     }`}
                   >
                     <tr>
-                      <th className="py-3 px-4">Nama / Departemen</th>
+                      <th className="py-3 px-4">Nama Karyawan</th>
+                      <th className="py-3 px-4">Departemen</th>
                       <th className="py-3 px-4">Email Perusahaan</th>
                       <th className="py-3 px-4">Tingkat Hak Akses</th>
                       <th className="py-3 px-4">Password Sistem</th>
@@ -1128,7 +1300,16 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                       >
                         <td className="py-3 px-4">
                           <div className="font-bold text-slate-100">{staff.name}</div>
-                          <div className="text-[11px] text-neutral-400">{staff.department}</div>
+                          <div className="text-[11px] text-neutral-400 font-mono">{staff.phone}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold border ${
+                              getDepartmentBadge(staff.department).color
+                            }`}
+                          >
+                            {staff.department}
+                          </span>
                         </td>
                         <td className="py-3 px-4 font-mono font-semibold text-amber-500">
                           {staff.email}
@@ -1148,13 +1329,30 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                           {staff.password}
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <button
-                            onClick={() => copyToClipboard(`${staff.email} | ${staff.password}`)}
-                            className="px-2.5 py-1 rounded-lg border border-neutral-700 hover:border-amber-400 text-neutral-300 hover:text-white cursor-pointer transition-colors"
-                            title="Salin Kredensial"
-                          >
-                            {copiedText === `${staff.email} | ${staff.password}` ? 'Tersalin!' : 'Salin'}
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            {isAdmin ? (
+                              <button
+                                onClick={() => setEditingStaff(staff)}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-neutral-950 font-bold text-xs cursor-pointer transition-colors shadow-xs"
+                                title="Edit Data & Hak Akses Staff (Khusus Administrator)"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                <span>Edit</span>
+                              </button>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-mono text-neutral-500 px-2 py-0.5 rounded border border-neutral-800">
+                                <Lock className="w-3 h-3 text-neutral-500" />
+                                <span>Khusus Admin</span>
+                              </span>
+                            )}
+                            <button
+                              onClick={() => copyToClipboard(`${staff.email} | ${staff.password}`)}
+                              className="px-2.5 py-1 rounded-lg border border-neutral-700 hover:border-amber-400 text-neutral-300 hover:text-white cursor-pointer transition-colors"
+                              title="Salin Kredensial"
+                            >
+                              {copiedText === `${staff.email} | ${staff.password}` ? 'Tersalin!' : 'Salin'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1743,6 +1941,55 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ======================= MODAL: DETAIL PROJECT ======================= */}
+      {selectedProjectForDetail && (
+        <ProjectDetailModal
+          project={projects.find((p) => p.id === selectedProjectForDetail.id) || selectedProjectForDetail}
+          isAdmin={isAdmin}
+          onClose={() => setSelectedProjectForDetail(null)}
+          onOpenPhotoPreview={(photo) => setSelectedPhotoPreview(photo)}
+        />
+      )}
+
+      {/* ======================= MODAL: EDIT STAFF ======================= */}
+      {editingStaff && (
+        <EditStaffModal
+          staff={editingStaff}
+          onClose={() => setEditingStaff(null)}
+          onSave={(staffId, updatedData) => updateStaff(staffId, updatedData)}
+          generatePassword={() => generateRandomPassword('STAFF')}
+        />
+      )}
+
+      {/* ======================= MODAL: EDIT CUSTOMER ======================= */}
+      {editingCustomer && (
+        <EditCustomerModal
+          customer={editingCustomer}
+          onClose={() => setEditingCustomer(null)}
+          onSave={(customerId, updatedData) => updateCustomer(customerId, updatedData)}
+          generatePassword={(companyName) => generateRandomPassword(companyName)}
+        />
+      )}
+
+      {/* ======================= MODAL: EDIT PROJECT ======================= */}
+      {editingProject && (
+        <EditProjectModal
+          project={editingProject}
+          customers={customers}
+          onClose={() => setEditingProject(null)}
+          onSave={(projectId, updatedData) => updateProject(projectId, updatedData)}
+        />
+      )}
+
+      {/* ======================= MODAL: MANAGE MILESTONES (URUTAN KERJA) ======================= */}
+      {editingMilestoneProject && (
+        <ManageMilestonesModal
+          project={projects.find((p) => p.id === editingMilestoneProject.id) || editingMilestoneProject}
+          onClose={() => setEditingMilestoneProject(null)}
+          onSave={(projectId, milestones) => updateProjectMilestones(projectId, milestones)}
+        />
       )}
     </div>
   );

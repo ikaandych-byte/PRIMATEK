@@ -1,5 +1,16 @@
 export type StaffRole = 'Administrator Full Access' | 'Staff Access';
 
+export type DepartmentType =
+  | 'Executive Management'
+  | 'Design'
+  | 'Manufacturing Process'
+  | 'Purchasing'
+  | 'Quality'
+  | 'Production'
+  | 'Assembly'
+  | 'PPIC'
+  | 'General Admin';
+
 export interface InternalStaff {
   id: string;
   email: string;
@@ -36,10 +47,12 @@ export type ProjectStatus =
 export interface ProjectMilestone {
   id: string;
   title: string;
+  department?: string; // Design | Manufacturing Process | Purchasing | Quality | Production | Assembly | PPIC | General Admin
   targetDate: string;
   completedDate?: string;
   status: 'completed' | 'in-progress' | 'pending';
   notes?: string;
+  order?: number;
 }
 
 export interface ProjectPhoto {
@@ -63,6 +76,35 @@ export interface ActivityLogItem {
   detail: string;
 }
 
+export interface InvoiceDetails {
+  invoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string;
+  totalAmount: number;
+  downPaymentPercent: number;
+  downPaymentAmount: number;
+  finalPaymentAmount: number;
+  status: 'Unpaid' | 'DP Paid' | 'Paid Full';
+  bankName: string;
+  bankAccount: string;
+  accountHolder: string;
+  paidAt?: string;
+}
+
+export interface DeliveryDetails {
+  doNumber: string; // Delivery Order / Surat Jalan
+  deliveryDate: string;
+  expedition: string;
+  vehicleNumber?: string;
+  driverName: string;
+  driverPhone: string;
+  deliveryAddress: string;
+  status: 'Packaging & QC Checked' | 'In Transit' | 'Delivered' | 'Installed & BAST Signed';
+  bastNumber: string;
+  receivedBy: string;
+  receivedDate?: string;
+}
+
 export interface ProjectItem {
   id: string;
   poNumber: string;
@@ -82,4 +124,6 @@ export interface ProjectItem {
   milestones: ProjectMilestone[];
   photos: ProjectPhoto[];
   activityLogs: ActivityLogItem[];
+  invoice?: InvoiceDetails;
+  delivery?: DeliveryDetails;
 }
