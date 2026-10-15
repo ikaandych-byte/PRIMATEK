@@ -25,6 +25,16 @@ import {
   Printer,
   DollarSign,
   Check,
+  PenTool,
+  Cpu,
+  ShoppingCart,
+  Factory,
+  Wrench,
+  FileSpreadsheet,
+  Sparkles,
+  Layers,
+  Activity,
+  Filter,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useProjectData } from '../context/ProjectDataContext';
@@ -32,6 +42,13 @@ import { useTheme } from '../context/ThemeContext';
 import { PrimatechLogo } from '../components/PrimatechLogo';
 import { ProjectItem, ProjectPhoto } from '../types/backend';
 import { COMPANY_INFO } from '../data/company';
+import {
+  calculateOverallPhysicalProgress,
+  getProjectDepartmentData,
+  DEPARTMENT_METAS,
+  DEPT_LIST,
+  DeptKey,
+} from '../utils/departmentDataUtils';
 
 interface CustomerPortalPageProps {
   onBackToHome: () => void;
@@ -69,9 +86,45 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
 
   const [activeProjectId, setActiveProjectId] = useState<string>('');
   const activeProject = myProjects.find((p) => p.id === activeProjectId) || myProjects[0];
+
+  // Real-time progress & status breakdown calculated from the 8 internal departments
+  const { totalPercent: realProgressPercent, breakdown: deptBreakdown } = activeProject
+    ? calculateOverallPhysicalProgress(activeProject)
+    : { totalPercent: 0, breakdown: {} as any };
+
+  const effectiveProgressPercent = activeProject
+    ? Math.max(activeProject.progressPercent, realProgressPercent)
+    : 0;
+
   const isProjectFinished = Boolean(
-    activeProject && (activeProject.progressPercent >= 100 || activeProject.status === 'Completed')
+    activeProject && (effectiveProgressPercent >= 100 || activeProject.status === 'Completed')
   );
+
+  // Filter states for photos and activity logs
+  const [photoDeptFilter, setPhotoDeptFilter] = useState<string>('all');
+  const [logDeptFilter, setLogDeptFilter] = useState<string>('all');
+  const [showDeptBreakdown, setShowDeptBreakdown] = useState<boolean>(true);
+
+  const renderDeptIcon = (key: DeptKey, size: string = 'w-4 h-4') => {
+    switch (key) {
+      case 'design':
+        return <PenTool className={size} />;
+      case 'manufacturing':
+        return <Cpu className={size} />;
+      case 'purchasing':
+        return <ShoppingCart className={size} />;
+      case 'quality':
+        return <CheckCircle2 className={size} />;
+      case 'production':
+        return <Factory className={size} />;
+      case 'assembly':
+        return <Wrench className={size} />;
+      case 'ppic':
+        return <Truck className={size} />;
+      case 'generalAdmin':
+        return <FileSpreadsheet className={size} />;
+    }
+  };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -377,7 +430,7 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left 2 Cols: Status, Progress & Milestones */}
                 <div className="lg:col-span-2 space-y-6">
-                  {/* Project Overview Card */}
+                  {/* Project Overview Card (Orderan Project Manufaktur Anda) */}
                   <div
                     className={`p-6 sm:p-7 rounded-3xl border space-y-5 ${
                       isDark ? 'bg-[#0f141f] border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
@@ -385,12 +438,15 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="text-xs font-mono font-bold text-amber-500">
                             {activeProject.poNumber}
                           </span>
                           <span className="text-neutral-500">•</span>
                           <span className="text-xs text-neutral-400 font-mono">{activeProject.category}</span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                            <Sparkles className="w-3 h-3" /> Real-Time 8 Dept Sync
+                          </span>
                         </div>
                         <h3 className="text-lg sm:text-xl font-black font-display text-slate-100 mt-1">
                           {activeProject.projectName}
@@ -406,24 +462,70 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
                       {activeProject.description}
                     </p>
 
-                    {/* Progress Bar & Key Dates */}
+                    {/* Ringkasan Cepat Status 8 Departemen Perusahaan */}
+                    <div className="pt-2 border-t border-slate-200 dark:border-neutral-800/80">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
+                          <Layers className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Status Terkini 8 Departemen Workshop:</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-400 font-semibold">
+                          8/8 Departemen Aktif Mengupdate
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {DEPT_LIST.map((key) => {
+                          const meta = DEPARTMENT_METAS[key];
+                          const stat = deptBreakdown[key];
+                          return (
+                            <div
+                              key={key}
+                              className={`p-2.5 rounded-xl border text-[11px] space-y-1 transition-all ${
+                                isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-slate-50 border-slate-200'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-[10px]">
+                                <span className="font-bold truncate text-slate-200">{meta.label.slice(3)}</span>
+                                <span className="font-mono font-bold text-amber-400">{stat?.percent || 0}%</span>
+                              </div>
+                              <p className="text-[10px] text-neutral-400 truncate" title={stat?.statusText}>
+                                {stat?.statusText || 'In Progress'}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Kemajuan Pengerjaan Fisik Mesin (Master Progress & Live Breakdown) */}
                     <div
-                      className={`p-4 rounded-2xl border space-y-3 ${
+                      className={`p-5 rounded-2xl border space-y-4 ${
                         isDark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-slate-50 border-slate-200'
                       }`}
                     >
                       <div className="flex items-center justify-between text-xs font-mono">
-                        <span className="text-neutral-400">Kemajuan Pengerjaan Fisik Mesin</span>
-                        <span className="text-base font-black text-amber-400 font-display">
-                          {activeProject.progressPercent}% Selesai
+                        <div className="space-y-0.5">
+                          <span className="text-neutral-300 font-bold flex items-center gap-1.5">
+                            <Activity className="w-4 h-4 text-amber-500" />
+                            <span>Kemajuan Pengerjaan Fisik Mesin</span>
+                          </span>
+                          <span className="text-[10px] text-neutral-400 block">
+                            Dihitung otomatis &amp; terupdate real-time dari input 8 departemen workshop
+                          </span>
+                        </div>
+                        <span className="text-lg font-black text-amber-400 font-display">
+                          {effectiveProgressPercent}% Selesai
                         </span>
                       </div>
+
                       <div className="w-full bg-neutral-200 dark:bg-neutral-800 h-3 rounded-full overflow-hidden">
                         <div
                           className="bg-gradient-to-r from-amber-400 via-orange-500 to-red-600 h-full rounded-full transition-all duration-700"
-                          style={{ width: `${activeProject.progressPercent}%` }}
+                          style={{ width: `${effectiveProgressPercent}%` }}
                         />
                       </div>
+
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-[11px] font-mono text-neutral-400">
                         <div>
                           <span>Mulai Pengerjaan:</span>
@@ -434,9 +536,65 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
                           <div className="font-bold text-slate-200">{activeProject.targetCompletionDate}</div>
                         </div>
                         <div>
-                          <span>PIC Engineer PTT:</span>
+                          <span>PIC Utama Engineer:</span>
                           <div className="font-bold text-amber-500 truncate">{activeProject.picEngineer.split(' ')[0]}</div>
                         </div>
+                      </div>
+
+                      {/* Detail Breakdown Kemajuan Fisik per 8 Departemen */}
+                      <div className="pt-3 border-t border-slate-200 dark:border-neutral-800 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-200">
+                            Breakdown Kemajuan Fisik per Departemen:
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowDeptBreakdown(!showDeptBreakdown)}
+                            className="text-[11px] font-mono text-amber-400 hover:underline cursor-pointer"
+                          >
+                            {showDeptBreakdown ? 'Tutup Rincian ▲' : 'Buka Rincian ▼'}
+                          </button>
+                        </div>
+
+                        {showDeptBreakdown && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                            {DEPT_LIST.map((key) => {
+                              const meta = DEPARTMENT_METAS[key];
+                              const stat = deptBreakdown[key];
+                              return (
+                                <div
+                                  key={key}
+                                  className={`p-3 rounded-xl border space-y-1.5 ${
+                                    isDark ? 'bg-neutral-900/80 border-neutral-800' : 'bg-white border-slate-200'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-1.5 font-bold text-slate-200">
+                                      <span className={meta.colorText}>{renderDeptIcon(key, 'w-3.5 h-3.5')}</span>
+                                      <span>{meta.label}</span>
+                                    </div>
+                                    <span className="font-mono font-bold text-amber-400">{stat?.percent || 0}%</span>
+                                  </div>
+
+                                  <div className="w-full bg-neutral-200 dark:bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-gradient-to-r from-amber-400 to-red-500 rounded-full transition-all duration-500"
+                                      style={{ width: `${stat?.percent || 0}%` }}
+                                    />
+                                  </div>
+
+                                  <div className="text-[10px] text-neutral-400 space-y-0.5">
+                                    <div className="flex justify-between">
+                                      <span className="font-semibold text-slate-300 truncate max-w-[170px]">{stat?.statusText}</span>
+                                      <span className="font-mono">{stat?.lastUpdated}</span>
+                                    </div>
+                                    <p className="line-clamp-1 text-[10px] text-neutral-400">{stat?.notes}</p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -475,23 +633,30 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
                           </div>
                           <div className="flex-1 pb-3 border-b border-inherit">
                             <div className="flex flex-wrap items-center justify-between gap-1">
-                              <span
-                                className={`text-xs font-bold ${
-                                  m.status === 'completed'
-                                    ? 'text-slate-100'
-                                    : m.status === 'in-progress'
-                                    ? 'text-amber-400'
-                                    : 'text-neutral-500'
-                                }`}
-                              >
-                                {m.title}
-                              </span>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span
+                                  className={`text-xs font-bold ${
+                                    m.status === 'completed'
+                                      ? 'text-slate-100'
+                                      : m.status === 'in-progress'
+                                      ? 'text-amber-400'
+                                      : 'text-neutral-500'
+                                  }`}
+                                >
+                                  {m.title}
+                                </span>
+                                {m.department && (
+                                  <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                                    Dept: {m.department}
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[10px] font-mono text-neutral-400">
                                 {m.completedDate ? `Selesai: ${m.completedDate}` : `Target: ${m.targetDate}`}
                               </span>
                             </div>
                             {m.notes && (
-                              <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">
+                              <p className="text-[11px] text-neutral-300 dark:text-neutral-400 mt-1.5 leading-relaxed bg-slate-100 dark:bg-black/40 p-2.5 rounded-xl border border-slate-200 dark:border-neutral-800/60 font-sans">
                                 {m.notes}
                               </p>
                             )}
@@ -598,30 +763,121 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
                     </div>
                   )}
 
-                  {/* Activity Log from Engineering Team */}
+                  {/* Activity Log from Engineering Team (Catatan Progres Lapangan Terkini) */}
                   {activeProject.activityLogs && activeProject.activityLogs.length > 0 && (
                     <div
-                      className={`p-6 rounded-3xl border space-y-3 ${
+                      className={`p-6 sm:p-7 rounded-3xl border space-y-4 ${
                         isDark ? 'bg-[#0f141f] border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
                       }`}
                     >
-                      <h4 className="text-sm font-bold font-display">Catatan Progres Lapangan Terkini</h4>
-                      <div className="space-y-2.5">
-                        {activeProject.activityLogs.map((log) => (
-                          <div
-                            key={log.id}
-                            className={`p-3 rounded-xl border text-xs space-y-1 ${
-                              isDark ? 'bg-neutral-900/50 border-neutral-800' : 'bg-slate-50 border-slate-200'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400">
-                              <span className="text-amber-500 font-bold">{log.actor}</span>
-                              <span>{log.timestamp}</span>
-                            </div>
-                            <div className="font-semibold text-slate-200">{log.action}</div>
-                            <div className="text-neutral-400 text-[11px]">{log.detail}</div>
-                          </div>
-                        ))}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <h4 className="text-base font-bold font-display flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-amber-500" />
+                            <span>Catatan Progres Lapangan Terkini</span>
+                          </h4>
+                          <p className="text-xs text-neutral-400">
+                            Live feed pengerjaan real-time dari 8 departemen workshop PTT
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 self-start sm:self-auto">
+                          {activeProject.activityLogs.length} Catatan Lapangan
+                        </span>
+                      </div>
+
+                      {/* Filter by Department */}
+                      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => setLogDeptFilter('all')}
+                          className={`px-3 py-1 rounded-xl font-semibold transition-all cursor-pointer shrink-0 ${
+                            logDeptFilter === 'all'
+                              ? 'bg-amber-500 text-neutral-950 font-bold'
+                              : isDark
+                              ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white'
+                              : 'bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900'
+                          }`}
+                        >
+                          Semua Catatan ({activeProject.activityLogs.length})
+                        </button>
+                        {DEPT_LIST.map((key) => {
+                          const meta = DEPARTMENT_METAS[key];
+                          const count = activeProject.activityLogs.filter(
+                            (l) =>
+                              (l.department && l.department.toLowerCase() === meta.deptName.toLowerCase()) ||
+                              (l.actor && l.actor.toLowerCase().includes(meta.deptName.toLowerCase())) ||
+                              (l.action && l.action.toLowerCase().includes(meta.label.toLowerCase()))
+                          ).length;
+                          if (count === 0) return null;
+
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => setLogDeptFilter(meta.deptName)}
+                              className={`px-2.5 py-1 rounded-xl font-semibold transition-all cursor-pointer shrink-0 ${
+                                logDeptFilter === meta.deptName
+                                  ? 'bg-amber-500 text-neutral-950 font-bold'
+                                  : isDark
+                                  ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white'
+                                  : 'bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900'
+                              }`}
+                            >
+                              {meta.code} ({count})
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Filtered Logs List */}
+                      <div className="space-y-2.5 pt-1 max-h-[420px] overflow-y-auto pr-1">
+                        {activeProject.activityLogs
+                          .filter((log) => {
+                            if (logDeptFilter === 'all') return true;
+                            const q = logDeptFilter.toLowerCase();
+                            return (
+                              (log.department && log.department.toLowerCase().includes(q)) ||
+                              (log.actor && log.actor.toLowerCase().includes(q)) ||
+                              (log.action && log.action.toLowerCase().includes(q)) ||
+                              (log.detail && log.detail.toLowerCase().includes(q))
+                            );
+                          })
+                          .map((log) => {
+                            // Match department meta if possible
+                            const matchedDept = Object.values(DEPARTMENT_METAS).find(
+                              (m) =>
+                                (log.department && log.department.toLowerCase() === m.deptName.toLowerCase()) ||
+                                log.actor.toLowerCase().includes(m.deptName.toLowerCase()) ||
+                                log.action.toLowerCase().includes(m.label.toLowerCase())
+                            );
+
+                            return (
+                              <div
+                                key={log.id}
+                                className={`p-3.5 rounded-2xl border text-xs space-y-1.5 transition-all ${
+                                  isDark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-slate-50 border-slate-200'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between text-[10px] font-mono">
+                                  <div className="flex items-center gap-1.5">
+                                    {matchedDept && (
+                                      <span
+                                        className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${matchedDept.badge}`}
+                                      >
+                                        {matchedDept.label}
+                                      </span>
+                                    )}
+                                    <span className="text-amber-500 font-bold">{log.actor}</span>
+                                  </div>
+                                  <span className="text-neutral-400">{log.timestamp}</span>
+                                </div>
+                                <div className="font-bold text-slate-200 text-xs">{log.action}</div>
+                                <div className="text-neutral-300 dark:text-neutral-400 text-[11px] leading-relaxed">
+                                  {log.detail}
+                                </div>
+                              </div>
+                            );
+                          })}
                       </div>
                     </div>
                   )}
@@ -629,42 +885,114 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
 
                 {/* Right 1 Col: Live Updated Project Photos & Support */}
                 <div className="space-y-6">
-                  {/* Project Photos Card */}
+                  {/* Project Photos Card (Foto Hasil Pengerjaan) */}
                   <div
-                    className={`p-6 rounded-3xl border space-y-4 ${
+                    className={`p-6 sm:p-7 rounded-3xl border space-y-4 ${
                       isDark ? 'bg-[#0f141f] border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="text-base font-bold font-display">Foto Hasil Pengerjaan</h4>
-                        <p className="text-xs text-neutral-400">Dokumentasi fisik mesin terupdate</p>
+                        <h4 className="text-base font-bold font-display flex items-center gap-2">
+                          <Images className="w-4 h-4 text-amber-500" />
+                          <span>Foto Hasil Pengerjaan</span>
+                        </h4>
+                        <p className="text-xs text-neutral-400">
+                          Dokumentasi fisik mesin terupdate dari 8 departemen
+                        </p>
                       </div>
-                      <Images className="w-5 h-5 text-amber-500" />
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                        {activeProject.photos?.length || 0} Foto
+                      </span>
                     </div>
 
+                    {/* Filter Foto per Departemen */}
+                    {activeProject.photos && activeProject.photos.length > 0 && (
+                      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => setPhotoDeptFilter('all')}
+                          className={`px-2.5 py-1 rounded-xl font-semibold transition-all cursor-pointer shrink-0 ${
+                            photoDeptFilter === 'all'
+                              ? 'bg-amber-500 text-neutral-950 font-bold'
+                              : isDark
+                              ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white'
+                              : 'bg-slate-100 border border-slate-200 text-slate-700'
+                          }`}
+                        >
+                          Semua ({activeProject.photos.length})
+                        </button>
+                        {['Design', 'Manufacturing', 'Quality', 'Assembly', 'PPIC'].map((deptName) => {
+                          const count = activeProject.photos.filter(
+                            (p) =>
+                              (p.department && p.department.toLowerCase().includes(deptName.toLowerCase())) ||
+                              (p.category && p.category.toLowerCase().includes(deptName.toLowerCase()))
+                          ).length;
+                          if (count === 0) return null;
+
+                          return (
+                            <button
+                              key={deptName}
+                              type="button"
+                              onClick={() => setPhotoDeptFilter(deptName)}
+                              className={`px-2.5 py-1 rounded-xl font-semibold transition-all cursor-pointer shrink-0 ${
+                                photoDeptFilter === deptName
+                                  ? 'bg-amber-500 text-neutral-950 font-bold'
+                                  : isDark
+                                  ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white'
+                                  : 'bg-slate-100 border border-slate-200 text-slate-700'
+                              }`}
+                            >
+                              {deptName} ({count})
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     {activeProject.photos && activeProject.photos.length > 0 ? (
-                      <div className="space-y-3">
-                        {activeProject.photos.map((photo) => (
-                          <div
-                            key={photo.id}
-                            onClick={() => setSelectedPhotoPreview(photo)}
-                            className="group relative rounded-2xl overflow-hidden aspect-video bg-neutral-900 border border-neutral-800 cursor-pointer"
-                          >
-                            <img
-                              src={photo.imageUrl}
-                              alt={photo.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex flex-col justify-end p-3 text-white">
-                              <span className="text-[10px] font-mono text-amber-400 uppercase font-bold">
-                                {photo.category}
-                              </span>
-                              <h5 className="text-xs font-bold font-display truncate">{photo.title}</h5>
-                              <p className="text-[10px] text-neutral-300 line-clamp-1">{photo.caption}</p>
+                      <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
+                        {activeProject.photos
+                          .filter((photo) => {
+                            if (photoDeptFilter === 'all') return true;
+                            const q = photoDeptFilter.toLowerCase();
+                            return (
+                              (photo.department && photo.department.toLowerCase().includes(q)) ||
+                              (photo.category && photo.category.toLowerCase().includes(q)) ||
+                              (photo.title && photo.title.toLowerCase().includes(q))
+                            );
+                          })
+                          .map((photo) => (
+                            <div
+                              key={photo.id}
+                              onClick={() => setSelectedPhotoPreview(photo)}
+                              className="group relative rounded-2xl overflow-hidden aspect-video bg-neutral-900 border border-neutral-800 cursor-pointer shadow-md hover:border-amber-500/50 transition-all"
+                            >
+                              <img
+                                src={photo.imageUrl}
+                                alt={photo.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-3.5 text-white">
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  {photo.department && (
+                                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500 text-neutral-950 uppercase font-black">
+                                      {photo.department}
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] font-mono text-amber-300 font-bold">
+                                    {photo.category}
+                                  </span>
+                                </div>
+                                <h5 className="text-xs font-bold font-display truncate text-white">{photo.title}</h5>
+                                <p className="text-[10px] text-neutral-300 line-clamp-1">{photo.caption}</p>
+                                <div className="flex items-center justify-between text-[9px] font-mono text-neutral-400 mt-1 pt-1 border-t border-white/10">
+                                  <span>Oleh: {photo.uploadedBy}</span>
+                                  <span>{photo.uploadedAt}</span>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     ) : (
                       <div className="p-6 text-center text-neutral-400 text-xs rounded-2xl border border-dashed border-neutral-800">
@@ -673,32 +1001,108 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
                     )}
                   </div>
 
-                  {/* Dedicated Support Card */}
+                  {/* Dedicated Multi-Department Support Card (Hubungi Tim Engineering PTT) */}
                   <div
-                    className={`p-6 rounded-3xl border space-y-4 ${
+                    className={`p-6 sm:p-7 rounded-3xl border space-y-4 ${
                       isDark ? 'bg-[#0f141f] border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
                     }`}
                   >
-                    <div className="flex items-center gap-2 text-xs font-bold font-display uppercase tracking-wider text-amber-500">
-                      <MessageSquare className="w-4 h-4" />
-                      <span>Hubungi Tim Engineering PTT</span>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs font-bold font-display uppercase tracking-wider text-amber-500">
+                        <MessageSquare className="w-4 h-4" />
+                        <span>Hubungi Tim Engineering PTT</span>
+                      </div>
+                      <p className="text-xs text-neutral-400 leading-relaxed">
+                        Konsultasi teknis langsung dengan PIC dan lead departemen pengerjaan mesin Anda di MM2100 Cibitung:
+                      </p>
                     </div>
 
-                    <p className="text-xs text-neutral-400 leading-relaxed">
-                      Memerlukan koordinasi teknis atau jadwal FAT langsung di workshop MM2100 Cibitung?
-                    </p>
+                    {/* Department Engineering Contact Directory */}
+                    <div className="space-y-2 pt-1 text-xs">
+                      {[
+                        {
+                          role: 'PIC Utama Proyek (Lead Engineer)',
+                          dept: 'Executive / General Lead',
+                          name: activeProject.picEngineer,
+                          icon: Sparkles,
+                          topic: 'Jadwal Umum, Kontrak & FAT',
+                        },
+                        {
+                          role: 'Tim 3D CAD & Mechanical Design',
+                          dept: '1. Design',
+                          name: deptBreakdown.design?.activeLead || 'design@pttid.com',
+                          icon: PenTool,
+                          topic: 'Revisi Gambar Kerja 3D CAD & Toleransi',
+                        },
+                        {
+                          role: 'Workshop CNC Machining Supervisor',
+                          dept: '2. Manufacturing Process',
+                          name: deptBreakdown.manufacturing?.activeLead || 'engmc@pttid.com',
+                          icon: Cpu,
+                          topic: 'Proses Pemesinan & Fabrikasi Part Mesin',
+                        },
+                        {
+                          role: 'Quality Assurance & CMM Inspector',
+                          dept: '4. Quality',
+                          name: deptBreakdown.quality?.activeLead || 'quality@pttid.com',
+                          icon: CheckCircle2,
+                          topic: 'Laporan Dimensi CMM Mitutoyo & Sertifikat QC',
+                        },
+                        {
+                          role: 'Assembly & Electrical Wiring Specialist',
+                          dept: '6. Assembly',
+                          name: deptBreakdown.assembly?.activeLead || 'riyan@pttid.com',
+                          icon: Wrench,
+                          topic: 'Perakitan Panel Wiring PLC, HMI & Dry Run',
+                        },
+                        {
+                          role: 'PPIC Logistics & Delivery Coordinator',
+                          dept: '7. PPIC',
+                          name: deptBreakdown.ppic?.activeLead || 'Pak Wahyudi (Driver/Logistik)',
+                          icon: Truck,
+                          topic: 'Jadwal Truk Towing, Surat Jalan & BAST',
+                        },
+                      ].map((contact, idx) => {
+                        const Icon = contact.icon;
+                        const waText = encodeURIComponent(
+                          `Halo PT. Prima Teknik Trada, saya ${user?.name || 'PIC'} dari ${user?.company || 'Customer'} ingin berdiskusi teknis terkait project PO: ${activeProject.poNumber} (${activeProject.projectName}) khusus bagian [${contact.role} - ${contact.topic}]. Mohon informasinya. Terima kasih.`
+                        );
 
-                    <a
-                      href={`https://wa.me/${COMPANY_INFO.whatsappDirect}?text=${encodeURIComponent(
-                        `Halo PT. Prima Teknik Trada, saya ${user?.name} dari ${user?.company} ingin mendiskusikan update project PO: ${activeProject.poNumber} (${activeProject.projectName}). Mohon informasi jadwal teknis. Terima kasih.`
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      <span>Diskusi via WhatsApp</span>
-                    </a>
+                        return (
+                          <div
+                            key={idx}
+                            className={`p-3 rounded-2xl border flex items-center justify-between gap-3 transition-all ${
+                              isDark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-slate-50 border-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0 border border-amber-500/20">
+                                <Icon className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-[11px] font-bold text-slate-200 truncate">
+                                  {contact.role}
+                                </div>
+                                <div className="text-[10px] text-neutral-400 truncate">
+                                  {contact.name.split('@')[0]} • <span className="text-amber-500">{contact.topic}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <a
+                              href={`https://wa.me/${COMPANY_INFO.whatsappDirect}?text=${waText}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition-all shadow-sm shrink-0 flex items-center gap-1 cursor-pointer"
+                              title={`Hubungi via WhatsApp`}
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                              <span className="hidden sm:inline">Chat WA</span>
+                            </a>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>

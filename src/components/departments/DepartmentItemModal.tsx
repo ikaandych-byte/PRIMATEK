@@ -12,6 +12,8 @@ import {
   FileSpreadsheet,
   AlertCircle,
   HelpCircle,
+  Camera,
+  Image,
 } from 'lucide-react';
 import { DeptKey, DEPARTMENT_METAS } from '../../utils/departmentDataUtils';
 import { ProjectItem } from '../../types/backend';
@@ -22,7 +24,7 @@ interface DepartmentItemModalProps {
   deptKey: DeptKey;
   project: ProjectItem;
   itemData?: any; // If editing an existing item, or null for creating new
-  onSave: (savedItem: any) => void;
+  onSave: (savedItem: any, attachedPhoto?: any) => void;
   currentUserEmail: string;
 }
 
@@ -40,6 +42,10 @@ export const DepartmentItemModal: React.FC<DepartmentItemModalProps> = ({
 
   // Form states initialized according to department
   const [formData, setFormData] = useState<any>({});
+  const [attachPhoto, setAttachPhoto] = useState(false);
+  const [photoTitle, setPhotoTitle] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [photoCaption, setPhotoCaption] = useState('');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -208,7 +214,25 @@ export const DepartmentItemModal: React.FC<DepartmentItemModalProps> = ({
       ...formData,
       lastUpdated: new Date().toISOString().split('T')[0],
     };
-    onSave(updated);
+
+    let photoPayload = undefined;
+    if (attachPhoto && photoUrl.trim()) {
+      photoPayload = {
+        title: photoTitle.trim() || `Dokumentasi Fisik ${meta.label}`,
+        imageUrl: photoUrl.trim(),
+        caption: photoCaption.trim() || formData.notes || `Update progres fisik dari ${meta.label}`,
+        category:
+          deptKey === 'design'
+            ? '3D CAD Design'
+            : deptKey === 'assembly'
+            ? 'Assembly Line'
+            : deptKey === 'quality'
+            ? 'Testing & FAT'
+            : 'CNC Machining',
+      };
+    }
+
+    onSave(updated, photoPayload);
     onClose();
   };
 
@@ -1071,6 +1095,136 @@ export const DepartmentItemModal: React.FC<DepartmentItemModalProps> = ({
               </div>
             </>
           )}
+
+          {/* Lampirkan Foto Hasil Pengerjaan (Real-Time Sync ke Client Portal) */}
+          <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Camera className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  Lampirkan Foto Hasil Pengerjaan (Tampil Real-Time di Client Portal Customer)
+                </span>
+              </div>
+              <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={attachPhoto}
+                  onChange={(e) => setAttachPhoto(e.target.checked)}
+                  className="rounded text-amber-500 focus:ring-amber-500"
+                />
+                <span className="text-slate-700 dark:text-neutral-300">Aktifkan Lampiran Foto</span>
+              </label>
+            </div>
+
+            {attachPhoto && (
+              <div className="space-y-3 pt-2 border-t border-amber-500/20">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-1">
+                      Judul Foto Dokumentasi
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={`Contoh: Hasil Pengerjaan ${meta.deptName} - ${project.projectName.slice(0, 25)}`}
+                      value={photoTitle}
+                      onChange={(e) => setPhotoTitle(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-1">
+                      Keterangan / Caption Foto
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Penjelasan ringkas kondisi fisik mesin di workshop..."
+                      value={photoCaption}
+                      onChange={(e) => setPhotoCaption(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-1">
+                    URL Foto / Gambar Dokumentasi Fisik
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={photoUrl}
+                    onChange={(e) => setPhotoUrl(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-900 dark:text-white mb-2"
+                  />
+
+                  {/* Preset Quick Image Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                    <span className="text-neutral-400 text-[10px]">Pilih Foto Contoh Workshop:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhotoUrl('https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80');
+                        if (!photoTitle) setPhotoTitle(`Rangka Assembly & Pneumatik - ${meta.deptName}`);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-neutral-200 dark:bg-neutral-800 hover:bg-amber-500 hover:text-neutral-950 transition-colors"
+                    >
+                      Pneumatik & Base Frame
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhotoUrl('https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=1000&q=80');
+                        if (!photoTitle) setPhotoTitle(`Inspeksi CMM Presisi - ${meta.deptName}`);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-neutral-200 dark:bg-neutral-800 hover:bg-amber-500 hover:text-neutral-950 transition-colors"
+                    >
+                      Inspeksi CMM 3D
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhotoUrl('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1000&q=80');
+                        if (!photoTitle) setPhotoTitle(`Panel Listrik & Wiring HMI - ${meta.deptName}`);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-neutral-200 dark:bg-neutral-800 hover:bg-amber-500 hover:text-neutral-950 transition-colors"
+                    >
+                      Wiring Listrik & HMI
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhotoUrl('https://images.unsplash.com/photo-1581092162384-8987c1d64718?auto=format&fit=crop&w=1000&q=80');
+                        if (!photoTitle) setPhotoTitle(`Pemesinan CNC Milling 5-Axis - ${meta.deptName}`);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-neutral-200 dark:bg-neutral-800 hover:bg-amber-500 hover:text-neutral-950 transition-colors"
+                    >
+                      CNC Milling Workshop
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhotoUrl('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1000&q=80');
+                        if (!photoTitle) setPhotoTitle(`Pengiriman & Packing Truk - ${meta.deptName}`);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-neutral-200 dark:bg-neutral-800 hover:bg-amber-500 hover:text-neutral-950 transition-colors"
+                    >
+                      Ekspedisi Truk
+                    </button>
+                  </div>
+
+                  {photoUrl && (
+                    <div className="mt-2.5 flex items-center gap-3 p-2 rounded-xl border border-neutral-700 bg-black/40">
+                      <img src={photoUrl} alt="Preview" className="w-16 h-12 object-cover rounded-lg" />
+                      <div className="text-xs text-neutral-300">
+                        <span className="font-bold text-amber-400">Preview Foto Siap Kirim ke Portal Klien</span>
+                        <p className="text-[11px] text-neutral-400 truncate max-w-sm">{photoTitle || 'Tanpa judul'}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Common Notes Field for all departments */}
           <div>

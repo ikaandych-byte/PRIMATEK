@@ -65,6 +65,7 @@ export interface ProjectPhoto {
   caption: string;
   uploadedAt: string;
   uploadedBy: string;
+  department?: string; // e.g. 'Design' | 'Manufacturing Process' | 'Purchasing' | 'Quality' | 'Production' | 'Assembly' | 'PPIC' | 'General Admin'
   inspectionPassed?: boolean;
 }
 
@@ -74,6 +75,7 @@ export interface ActivityLogItem {
   actor: string;
   action: string;
   detail: string;
+  department?: string; // department name for real update filtering
 }
 
 export interface InvoiceDetails {

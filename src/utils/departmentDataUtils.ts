@@ -524,3 +524,423 @@ export const getProjectDepartmentData = (project: ProjectItem): DepartmentJobdes
     generalAdmin: existing.generalAdmin && existing.generalAdmin.length > 0 ? existing.generalAdmin : defaults.generalAdmin,
   };
 };
+
+/**
+ * Calculates real-time progress and summary for a single department's records
+ */
+export const calculateDepartmentProgress = (
+  deptKey: DeptKey,
+  items: any[]
+): { percent: number; statusText: string; lastUpdated: string; activeLead: string; notes: string } => {
+  if (!items || items.length === 0) {
+    return {
+      percent: 0,
+      statusText: 'Belum Ada Data',
+      lastUpdated: '-',
+      activeLead: 'Tim PTT',
+      notes: 'Menunggu input pengerjaan departemen.',
+    };
+  }
+
+  const newest = items[0];
+  const lastUpdated = newest.lastUpdated || newest.updateDate || newest.inspectionDate || newest.startDate || '-';
+
+  switch (deptKey) {
+    case 'design': {
+      let total = 0;
+      items.forEach((item: DesignScheduleItem) => {
+        if (item.status === 'Approved') total += 100;
+        else if (item.status === 'Under Review') total += 80;
+        else if (item.status === 'In Progress') total += 50;
+        else if (item.status === 'Delayed') total += 35;
+        else total += 20; // Scheduled
+      });
+      const avg = Math.round(total / items.length);
+      return {
+        percent: Math.min(100, Math.max(0, avg)),
+        statusText: newest.status || 'Design Active',
+        lastUpdated,
+        activeLead: newest.designerPic || 'design@pttid.com',
+        notes: `Software: ${newest.software || 'SolidWorks'} (${newest.revision || 'Rev 1.0'}). Dwg: ${newest.drawingNumber || '-'}`,
+      };
+    }
+
+    case 'manufacturing': {
+      let total = 0;
+      items.forEach((item: ManufacturingProcessItem) => {
+        if (typeof item.progressPercent === 'number') {
+          total += item.progressPercent;
+        } else if (item.status === 'Completed') {
+          total += 100;
+        } else if (item.status === 'Post-Process') {
+          total += 85;
+        } else if (item.status === 'Machining') {
+          total += 55;
+        } else {
+          total += 15;
+        }
+      });
+      const avg = Math.round(total / items.length);
+      return {
+        percent: Math.min(100, Math.max(0, avg)),
+        statusText: newest.status ? `Proses: ${newest.processType} (${newest.status})` : 'Machining Active',
+        lastUpdated,
+        activeLead: newest.operator || 'engmc@pttid.com',
+        notes: `Mesin: ${newest.machineUsed}. Part: ${newest.partName} (${newest.partNumber}).`,
+      };
+    }
+
+    case 'purchasing': {
+      let total = 0;
+      items.forEach((item: PurchasingItem) => {
+        if (item.status === 'Received & Warehoused') total += 100;
+        else if (item.status === 'In Transit') total += 75;
+        else if (item.status === 'PO Placed') total += 50;
+        else if (item.status === 'PR Submitted') total += 25;
+        else total += 40; // Delayed
+      });
+      const avg = Math.round(total / items.length);
+      return {
+        percent: Math.min(100, Math.max(0, avg)),
+        statusText: newest.status || 'PO Active',
+        lastUpdated,
+        activeLead: newest.picPurchasing || 'purchasing@pttid.com',
+        notes: `Supplier: ${newest.supplierName || 'Vendor'}. Item: ${newest.itemName} (${newest.quantity} ${newest.unit}).`,
+      };
+    }
+
+    case 'quality': {
+      let total = 0;
+      items.forEach((item: QualityCheckItem) => {
+        if (item.verdict === 'PASSED') total += 100;
+        else if (item.verdict === 'PASSED WITH NOTE') total += 85;
+        else if (item.verdict === 'PENDING') total += 40;
+        else total += 15; // REJECTED / NCR
+      });
+      const avg = Math.round(total / items.length);
+      return {
+        percent: Math.min(100, Math.max(0, avg)),
+        statusText: `Verdict: ${newest.verdict}`,
+        lastUpdated,
+        activeLead: newest.inspector || 'quality@pttid.com',
+        notes: `Alat ukur: ${newest.measuringTool}. Hasil: ${newest.measuredResult} (Tol: ${newest.toleranceSpec}).`,
+      };
+    }
+
+    case 'production': {
+      let total = 0;
+      items.forEach((item: ProductionOutputItem) => {
+        const qtyTarget = item.targetQty || 1;
+        const actualRatio = Math.round(((item.actualQty || 0) / qtyTarget) * 100);
+        const eff = item.efficiencyPercent || actualRatio;
+        total += Math.min(100, eff);
+      });
+      const avg = Math.round(total / items.length);
+      return {
+        percent: Math.min(100, Math.max(0, avg)),
+        statusText: `${newest.shift}: ${newest.status}`,
+        lastUpdated,
+        activeLead: newest.operatorPic || 'budianto@pttid.com',
+        notes: `Output: ${newest.actualQty}/${newest.targetQty} pcs (${newest.efficiencyPercent}% efisiensi) pada ${newest.machineLine}.`,
+      };
+    }
+
+    case 'assembly': {
+      let total = 0;
+      items.forEach((item: AssemblyProgressItem) => {
+        if (typeof item.progressPercent === 'number') {
+          total += item.progressPercent;
+        } else if (item.status === 'FAT Approved') {
+          total += 100;
+        } else if (item.status === 'Dry Run Tested') {
+          total += 85;
+        } else if (item.status === 'In Progress') {
+          total += 50;
+        } else {
+          total += 15;
+        }
+      });
+      const avg = Math.round(total / items.length);
+      return {
+        percent: Math.min(100, Math.max(0, avg)),
+        statusText: `Modul: ${newest.assemblyModule} (${newest.status})`,
+        lastUpdated,
+        activeLead: newest.leadTechnician || 'riyan@pttid.com',
+        notes: `Uji Dry Run: ${newest.dryRunCyclesCompleted || 100} siklus. Safety check: ${newest.safetyCheckPassed ? 'Lolos' : 'Pending'}.`,
+      };
+    }
+
+    case 'ppic': {
+      let total = 0;
+      items.forEach((item: DeliveryUpdateItem) => {
+        if (item.status === 'Delivered & Accepted') total += 100;
+        else if (item.status === 'Arrived on Site') total += 90;
+        else if (item.status === 'In Transit') total += 75;
+        else if (item.status === 'Dispatched') total += 60;
+        else total += 30; // Preparing Packaging
+      });
+      const avg = Math.round(total / items.length);
+      return {
+        percent: Math.min(100, Math.max(0, avg)),
+        statusText: `Status: ${newest.status}`,
+        lastUpdated,
+        activeLead: newest.driverName || 'PPIC Dispatch Lead',
+        notes: `Surat Jalan: ${newest.suratJalanNumber}. Armada: ${newest.vehicleNumber} (${newest.expeditionPartner}).`,
+      };
+    }
+
+    case 'generalAdmin': {
+      let total = 0;
+      items.forEach((item: GeneralAdminDataItem) => {
+        if (item.status === 'Signed & Approved' || item.status === 'Archived') total += 100;
+        else if (item.status === 'Sent to Customer') total += 75;
+        else total += 35; // Draft
+      });
+      const avg = Math.round(total / items.length);
+      return {
+        percent: Math.min(100, Math.max(0, avg)),
+        statusText: newest.status || 'Admin Verified',
+        lastUpdated,
+        activeLead: newest.adminPic || 'accounting@pttid.com',
+        notes: `Dokumen: ${newest.documentTitle}. Ref: ${newest.referenceNumber}.`,
+      };
+    }
+
+    default:
+      return {
+      percent: 50,
+      statusText: 'In Progress',
+      lastUpdated,
+      activeLead: 'Tim PTT',
+      notes: 'Pengerjaan berlangsung.',
+    };
+  }
+};
+
+/**
+ * Calculates overall physical machine progress weighted across departments
+ */
+export const calculateOverallPhysicalProgress = (
+  project: ProjectItem
+): {
+  totalPercent: number;
+  breakdown: Record<
+    DeptKey,
+    { percent: number; statusText: string; lastUpdated: string; activeLead: string; notes: string; meta: DepartmentMeta }
+  >;
+} => {
+  const deptData = getProjectDepartmentData(project);
+
+  // Weights sum to 100%
+  const weights: Record<DeptKey, number> = {
+    design: 0.15, // 15%
+    manufacturing: 0.25, // 25%
+    purchasing: 0.10, // 10%
+    quality: 0.10, // 10%
+    production: 0.10, // 10%
+    assembly: 0.20, // 20%
+    ppic: 0.10, // 10%
+    generalAdmin: 0.00, // 0% purely administrative documentation
+  };
+
+  const breakdown: any = {};
+  let totalScore = 0;
+
+  DEPT_LIST.forEach((key) => {
+    const items = (deptData as any)[key] || [];
+    const result = calculateDepartmentProgress(key, items);
+    breakdown[key] = {
+      ...result,
+      meta: DEPARTMENT_METAS[key],
+    };
+
+    const weight = weights[key] || 0;
+    totalScore += result.percent * weight;
+  });
+
+  const rounded = Math.round(totalScore);
+
+  return {
+    totalPercent: Math.min(100, Math.max(0, rounded)),
+    breakdown,
+  };
+};
+
+/**
+ * Synchronizes project milestones, progress, activity logs, photos, and delivery
+ * whenever any of the 8 departments saves an update.
+ */
+export const syncProjectFromDepartmentUpdate = (
+  project: ProjectItem,
+  deptKey: DeptKey,
+  savedItem: any,
+  actionType: 'add' | 'edit' | 'quick-status',
+  currentUser: any,
+  attachedPhoto?: { title: string; category?: any; imageUrl: string; caption?: string }
+): Partial<ProjectItem> => {
+  const meta = DEPARTMENT_METAS[deptKey];
+  const currentDeptData = getProjectDepartmentData(project);
+  const existingList: any[] = [...((currentDeptData as any)[deptKey] || [])];
+
+  const idx = existingList.findIndex((it) => it.id === savedItem.id);
+  if (idx >= 0) {
+    existingList[idx] = savedItem;
+  } else {
+    existingList.unshift(savedItem);
+  }
+
+  const updatedDeptData: DepartmentJobdesksData = {
+    ...currentDeptData,
+    [deptKey]: existingList,
+  };
+
+  // 1. Calculate new department progress & overall progress
+  const tempProject: ProjectItem = {
+    ...project,
+    departmentJobdesks: updatedDeptData,
+  };
+  const { totalPercent, breakdown } = calculateOverallPhysicalProgress(tempProject);
+  const deptResult = breakdown[deptKey];
+
+  // 2. Map & synchronize milestones
+  const existingMilestones = [...(project.milestones || [])];
+
+  // Define department-to-milestone mappings
+  const milestoneMap: Record<DeptKey, { title: string; order: number }> = {
+    design: { title: '1. Desain 3D CAD & Review Engineering', order: 1 },
+    purchasing: { title: '2. Pengadaan Material & Standard Parts', order: 2 },
+    manufacturing: { title: '3. Pemesinan CNC & Fabrikasi Presisi', order: 3 },
+    production: { title: '4. Produksi Komponen & Machining Shift', order: 4 },
+    quality: { title: '5. Quality Inspection & Pengujian CMM', order: 5 },
+    assembly: { title: '6. Perakitan Mekanikal, Wiring & Dry Run', order: 6 },
+    ppic: { title: '7. Factory Acceptance Test (FAT) & Pengiriman', order: 7 },
+    generalAdmin: { title: '8. Dokumen Legal, BAST & Garansi Resmi', order: 8 },
+  };
+
+  const targetMapping = milestoneMap[deptKey];
+  const msIndex = existingMilestones.findIndex(
+    (m) =>
+      (m.department && m.department.toLowerCase() === meta.deptName.toLowerCase()) ||
+      m.title.toLowerCase().includes(meta.deptName.toLowerCase()) ||
+      m.title.toLowerCase().includes(targetMapping.title.toLowerCase().slice(3))
+  );
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const milestoneStatus: 'completed' | 'in-progress' | 'pending' =
+    deptResult.percent >= 100 ? 'completed' : deptResult.percent > 0 ? 'in-progress' : 'pending';
+
+  const milestoneNotes = `[Update ${meta.label}] ${deptResult.statusText} • ${deptResult.notes} (Lead: ${deptResult.activeLead.split('@')[0]})`;
+
+  if (msIndex >= 0) {
+    existingMilestones[msIndex] = {
+      ...existingMilestones[msIndex],
+      department: meta.deptName,
+      status: milestoneStatus,
+      completedDate: milestoneStatus === 'completed' ? (existingMilestones[msIndex].completedDate || todayStr) : undefined,
+      notes: milestoneNotes,
+    };
+  } else {
+    existingMilestones.push({
+      id: `ms-${deptKey}-${Date.now()}`,
+      title: targetMapping.title,
+      department: meta.deptName,
+      targetDate: project.targetCompletionDate || todayStr,
+      completedDate: milestoneStatus === 'completed' ? todayStr : undefined,
+      status: milestoneStatus,
+      notes: milestoneNotes,
+      order: targetMapping.order,
+    });
+  }
+
+  // Sort milestones by order or id
+  existingMilestones.sort((a, b) => (a.order || 99) - (b.order || 99));
+
+  // 3. Activity Logs entry
+  const updatedLogs = [...(project.activityLogs || [])];
+  const summaryDetail = `${meta.jobdesk} → ${
+    savedItem.stageName ||
+    savedItem.partName ||
+    savedItem.itemName ||
+    savedItem.partOrItem ||
+    savedItem.documentTitle ||
+    savedItem.suratJalanNumber ||
+    savedItem.assemblyModule ||
+    'Data diperbarui'
+  }: ${savedItem.status || savedItem.verdict || ''} (${deptResult.notes})`;
+
+  updatedLogs.unshift({
+    id: `log-${Date.now()}`,
+    timestamp: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+    actor: `${currentUser?.name || 'Staff'} (${meta.deptName})`,
+    action: `${actionType === 'add' ? 'Tambah Catatan' : 'Update'} ${meta.label}`,
+    detail: summaryDetail,
+    department: meta.deptName,
+  });
+
+  // 4. Photos sync
+  const updatedPhotos = [...(project.photos || [])];
+  if (attachedPhoto && attachedPhoto.imageUrl && attachedPhoto.imageUrl.trim() !== '') {
+    updatedPhotos.unshift({
+      id: `ph-${Date.now()}`,
+      projectId: project.id,
+      projectName: project.projectName,
+      title: attachedPhoto.title || `Foto Dokumentasi ${meta.label}`,
+      category: attachedPhoto.category || (deptKey === 'design' ? '3D CAD Design' : deptKey === 'assembly' ? 'Assembly Line' : 'CNC Machining'),
+      imageUrl: attachedPhoto.imageUrl,
+      caption: attachedPhoto.caption || summaryDetail,
+      uploadedAt: todayStr,
+      uploadedBy: `${currentUser?.name || 'Staff'} (${meta.deptName})`,
+      department: meta.deptName,
+      inspectionPassed: true,
+    });
+  }
+
+  // 5. If PPIC updated delivery
+  let updatedDelivery = project.delivery;
+  if (deptKey === 'ppic') {
+    const ppicItem: DeliveryUpdateItem = savedItem;
+    updatedDelivery = {
+      doNumber: ppicItem.suratJalanNumber || project.delivery?.doNumber || `SJ-PTT/2026`,
+      deliveryDate: ppicItem.actualDeliveryDate || ppicItem.targetDeliveryDate || todayStr,
+      expedition: ppicItem.expeditionPartner || project.delivery?.expedition || 'Internal Trucking PTT',
+      vehicleNumber: ppicItem.vehicleNumber || project.delivery?.vehicleNumber || 'B 9244 PTT',
+      driverName: ppicItem.driverName || project.delivery?.driverName || 'Driver PTT',
+      driverPhone: ppicItem.driverPhone || project.delivery?.driverPhone || '+62 812-7889-1122',
+      deliveryAddress: ppicItem.destinationAddress || project.delivery?.deliveryAddress || 'Kawasan Industri MM2100',
+      status: ppicItem.status === 'Delivered & Accepted'
+        ? 'Delivered'
+        : ppicItem.status === 'In Transit'
+        ? 'In Transit'
+        : 'Packaging & QC Checked',
+      bastNumber: ppicItem.bastNumber || project.delivery?.bastNumber || `BAST-PTT/2026`,
+      receivedBy: ppicItem.recipientName || project.delivery?.receivedBy || project.customerName,
+      receivedDate: ppicItem.actualDeliveryDate || project.delivery?.receivedDate,
+    };
+  }
+
+  // 6. Overall project status determination
+  let newProjectStatus = project.status;
+  if (totalPercent >= 100) {
+    newProjectStatus = 'Completed';
+  } else if (totalPercent >= 85) {
+    newProjectStatus = 'Testing & FAT';
+  } else if (totalPercent >= 60) {
+    newProjectStatus = 'Assembly & Integration';
+  } else if (totalPercent >= 30) {
+    newProjectStatus = 'Fabrication & Machining';
+  } else {
+    newProjectStatus = 'Engineering Design';
+  }
+
+  return {
+    departmentJobdesks: updatedDeptData,
+    progressPercent: totalPercent,
+    status: newProjectStatus,
+    milestones: existingMilestones,
+    activityLogs: updatedLogs,
+    photos: updatedPhotos,
+    delivery: updatedDelivery,
+    actualCompletionDate: totalPercent >= 100 ? (project.actualCompletionDate || todayStr) : undefined,
+  };
+};
+

@@ -30,6 +30,8 @@ import {
   DepartmentMeta,
   mapDepartmentToKey,
   getProjectDepartmentData,
+  syncProjectFromDepartmentUpdate,
+  calculateOverallPhysicalProgress,
 } from '../../utils/departmentDataUtils';
 import { ProjectItem, DepartmentJobdesksData } from '../../types/backend';
 import { DepartmentItemModal } from './DepartmentItemModal';
@@ -129,39 +131,33 @@ export const DepartmentWorkspace: React.FC<DepartmentWorkspaceProps> = ({
 
   const aggregatedItems = getAggregatedItems();
 
+  // State for sync feedback notification
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+
   // Handle Save from Modal
-  const handleSaveItem = (savedItem: any) => {
+  const handleSaveItem = (savedItem: any, attachedPhoto?: any) => {
     if (!modalTargetProject) return;
 
     const currentDeptData = getProjectDepartmentData(modalTargetProject);
     const existingList: any[] = [...((currentDeptData as any)[activeDeptKey] || [])];
-
     const idx = existingList.findIndex((it) => it.id === savedItem.id);
-    if (idx >= 0) {
-      existingList[idx] = savedItem;
-    } else {
-      existingList.unshift(savedItem);
-    }
 
-    const updatedDeptData: DepartmentJobdesksData = {
-      ...currentDeptData,
-      [activeDeptKey]: existingList,
-    };
+    // Call full real-time synchronization function
+    const syncData = syncProjectFromDepartmentUpdate(
+      modalTargetProject,
+      activeDeptKey,
+      savedItem,
+      idx >= 0 ? 'edit' : 'add',
+      currentUser,
+      attachedPhoto
+    );
 
-    // Also push an activity log to the project
-    const updatedLogs = [...(modalTargetProject.activityLogs || [])];
-    updatedLogs.unshift({
-      id: `log-${Date.now()}`,
-      timestamp: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
-      actor: `${currentUser?.name || 'Staff'} (${currentMeta.label})`,
-      action: `${idx >= 0 ? 'Update' : 'Tambah'} Data ${currentMeta.label}`,
-      detail: `${currentMeta.jobdesk}: ${savedItem.stageName || savedItem.partName || savedItem.itemName || savedItem.partOrItem || savedItem.documentTitle || savedItem.suratJalanNumber || savedItem.subSystem || 'Data diperbarui'}`,
-    });
+    onUpdateProject(modalTargetProject.id, syncData);
 
-    onUpdateProject(modalTargetProject.id, {
-      departmentJobdesks: updatedDeptData,
-      activityLogs: updatedLogs,
-    });
+    setSyncFeedback(
+      `✓ Data ${currentMeta.label} berhasil disimpan! Client Portal telah terupdate real-time (Kemajuan Fisik, Milestone, Foto & Catatan Lapangan).`
+    );
+    setTimeout(() => setSyncFeedback(null), 4000);
   };
 
   // Handle Delete Item
@@ -177,9 +173,16 @@ export const DepartmentWorkspace: React.FC<DepartmentWorkspaceProps> = ({
       [activeDeptKey]: filtered,
     };
 
+    const tempProject = { ...project, departmentJobdesks: updatedDeptData };
+    const { totalPercent } = calculateOverallPhysicalProgress(tempProject);
+
     onUpdateProject(project.id, {
       departmentJobdesks: updatedDeptData,
+      progressPercent: totalPercent,
     });
+
+    setSyncFeedback(`Data jobdesk berhasil dihapus dan progress fisik mesin disesuaikan.`);
+    setTimeout(() => setSyncFeedback(null), 3000);
   };
 
   // Handle Quick Status Change
@@ -189,20 +192,24 @@ export const DepartmentWorkspace: React.FC<DepartmentWorkspaceProps> = ({
     const idx = existingList.findIndex((it) => it.id === itemId);
     if (idx < 0) return;
 
-    existingList[idx] = {
+    const updatedItem = {
       ...existingList[idx],
       status: newStatus,
       lastUpdated: new Date().toISOString().split('T')[0],
     };
 
-    const updatedDeptData: DepartmentJobdesksData = {
-      ...currentDeptData,
-      [activeDeptKey]: existingList,
-    };
+    const syncData = syncProjectFromDepartmentUpdate(
+      project,
+      activeDeptKey,
+      updatedItem,
+      'quick-status',
+      currentUser
+    );
 
-    onUpdateProject(project.id, {
-      departmentJobdesks: updatedDeptData,
-    });
+    onUpdateProject(project.id, syncData);
+
+    setSyncFeedback(`✓ Status cepat ${currentMeta.deptName} diubah ke "${newStatus}". Client Portal otomatis tersinkronisasi.`);
+    setTimeout(() => setSyncFeedback(null), 3500);
   };
 
   // Open Create Modal
@@ -247,6 +254,22 @@ export const DepartmentWorkspace: React.FC<DepartmentWorkspaceProps> = ({
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Real-time Sync Toast / Banner */}
+      {syncFeedback && (
+        <div className="p-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 text-xs font-semibold flex items-center justify-between gap-3 animate-fade-in shadow-lg shadow-emerald-500/10">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{syncFeedback}</span>
+          </div>
+          <button
+            onClick={() => setSyncFeedback(null)}
+            className="p-1 rounded hover:bg-emerald-500/20 text-emerald-300 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Super-Access / Role Information Banner */}
       <div className="p-4 rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
