@@ -34,11 +34,23 @@ import {
   CheckCheck,
   Banknote,
   EyeOff,
+  PenTool,
+  Cpu,
+  ShoppingCart,
+  Factory,
+  Wrench,
+  Truck,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useProjectData } from '../context/ProjectDataContext';
 import { useTheme } from '../context/ThemeContext';
 import { PrimatechLogo } from '../components/PrimatechLogo';
+import {
+  DEPARTMENT_METAS,
+  DeptKey,
+  DEPT_LIST,
+} from '../utils/departmentDataUtils';
 import {
   ProjectItem,
   ProjectStatus,
@@ -53,13 +65,14 @@ import { EditCustomerModal } from '../components/admin/EditCustomerModal';
 import { EditProjectModal } from '../components/admin/EditProjectModal';
 import { ManageMilestonesModal } from '../components/admin/ManageMilestonesModal';
 import { FinanceControlSection } from '../components/admin/FinanceControlSection';
+import { DepartmentWorkspace } from '../components/departments/DepartmentWorkspace';
 
 interface BackendAdminPageProps {
   onBackToHome: () => void;
   onOpenCustomerPortal?: () => void;
 }
 
-type AdminTab = 'overview' | 'finance' | 'customers' | 'projects' | 'schedule' | 'gallery' | 'staff';
+type AdminTab = 'overview' | 'finance' | 'departments' | 'customers' | 'projects' | 'schedule' | 'gallery' | 'staff';
 
 const getDepartmentBadge = (dept?: string) => {
   switch (dept) {
@@ -91,6 +104,8 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
   onOpenCustomerPortal,
 }) => {
   const { user, logout, isAdmin } = useAuth();
+  const isGeneralAdmin = user?.department === 'General Admin';
+  const canAccessAll = Boolean(isAdmin || isGeneralAdmin);
   const {
     staffAccounts,
     customers,
@@ -421,6 +436,13 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                     },
                   ]
                 : []),
+              {
+                id: 'departments',
+                label: canAccessAll
+                  ? 'Modul 8 Departemen'
+                  : `Modul: ${user?.department || 'Departemen'}`,
+                icon: Sliders,
+              },
               { id: 'customers', label: `Data Customer (${customers.length})`, icon: Users },
               { id: 'projects', label: `Data Project (${projects.length})`, icon: FolderKanban },
               { id: 'schedule', label: 'Schedule & Progress', icon: CalendarClock },
@@ -539,6 +561,85 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                 <div className="mt-2 text-xs text-neutral-400">
                   <span>{completedProjects} Project selesai &amp; serah terima</span>
                 </div>
+              </div>
+            </div>
+
+            {/* ================= 8 DEPARTEMEN JOBDESK CONTROL HUB ================= */}
+            <div className={`p-6 rounded-3xl border ${isDark ? 'bg-[#0f141f] border-neutral-800' : 'bg-white border-slate-200 shadow-xs'}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-500">
+                      Modul Divisi Perusahaan
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded-md font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
+                      8 Departemen
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold font-display mt-0.5">
+                    Modul &amp; Jobdesk 8 Departemen Company
+                  </h3>
+                  <p className="text-xs text-neutral-400">
+                    Setiap staf departemen hanya dapat mengakses modul jobdesk miliknya. Akun Administrator &amp; General Admin dapat mengakses seluruh 8 departemen.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setActiveTab('departments')}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs cursor-pointer shadow-xs"
+                >
+                  <span>Buka Modul Departemen</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {DEPT_LIST.map((dKey) => {
+                  const meta = DEPARTMENT_METAS[dKey];
+                  const hasAccess = canAccessAll || user?.department === meta.deptName;
+                  return (
+                    <div
+                      key={dKey}
+                      onClick={() => {
+                        if (hasAccess) {
+                          setActiveTab('departments');
+                        }
+                      }}
+                      className={`p-3.5 rounded-2xl border transition-all text-left ${
+                        hasAccess
+                          ? 'border-slate-200 dark:border-neutral-800 hover:border-amber-400/60 bg-slate-50/70 dark:bg-neutral-900/40 cursor-pointer hover:shadow-sm'
+                          : 'border-slate-200 dark:border-neutral-800/40 bg-slate-100/50 dark:bg-neutral-900/20 opacity-60 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className={`p-2 rounded-xl border ${meta.colorBg} ${meta.colorBorder} ${meta.colorText}`}>
+                          {dKey === 'design' && <PenTool className="w-4 h-4" />}
+                          {dKey === 'manufacturing' && <Cpu className="w-4 h-4" />}
+                          {dKey === 'purchasing' && <ShoppingCart className="w-4 h-4" />}
+                          {dKey === 'quality' && <CheckCircle2 className="w-4 h-4" />}
+                          {dKey === 'production' && <Factory className="w-4 h-4" />}
+                          {dKey === 'assembly' && <Wrench className="w-4 h-4" />}
+                          {dKey === 'ppic' && <Truck className="w-4 h-4" />}
+                          {dKey === 'generalAdmin' && <FileSpreadsheet className="w-4 h-4" />}
+                        </div>
+                        {hasAccess ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            Akses Terbuka
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-neutral-500/10 text-neutral-400 border border-neutral-500/20 flex items-center gap-1">
+                            <Lock className="w-2.5 h-2.5" />
+                            <span>Terkunci</span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">{meta.label}</div>
+                      <div className="text-[11px] font-mono text-amber-500 mt-0.5">{meta.jobdesk}</div>
+                      <div className="text-[10px] text-neutral-400 mt-1 line-clamp-2">
+                        {meta.description}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -702,6 +803,16 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
         {activeTab === 'finance' && (
           <FinanceControlSection
             projects={projects}
+            isAdmin={isAdmin}
+            onUpdateProject={updateProject}
+          />
+        )}
+
+        {/* ======================= TAB: MODUL 8 DEPARTEMEN ======================= */}
+        {activeTab === 'departments' && (
+          <DepartmentWorkspace
+            projects={projects}
+            currentUser={user}
             isAdmin={isAdmin}
             onUpdateProject={updateProject}
           />
