@@ -41,6 +41,7 @@ import {
   Wrench,
   Truck,
   FileSpreadsheet,
+  Database,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useProjectData } from '../context/ProjectDataContext';
@@ -66,13 +67,23 @@ import { EditProjectModal } from '../components/admin/EditProjectModal';
 import { ManageMilestonesModal } from '../components/admin/ManageMilestonesModal';
 import { FinanceControlSection } from '../components/admin/FinanceControlSection';
 import { DepartmentWorkspace } from '../components/departments/DepartmentWorkspace';
+import { DatabaseSupabaseSection } from '../components/admin/DatabaseSupabaseSection';
 
 interface BackendAdminPageProps {
   onBackToHome: () => void;
   onOpenCustomerPortal?: () => void;
 }
 
-type AdminTab = 'overview' | 'finance' | 'departments' | 'customers' | 'projects' | 'schedule' | 'gallery' | 'staff';
+type AdminTab =
+  | 'overview'
+  | 'finance'
+  | 'departments'
+  | 'customers'
+  | 'projects'
+  | 'schedule'
+  | 'gallery'
+  | 'staff'
+  | 'database';
 
 const getDepartmentBadge = (dept?: string) => {
   switch (dept) {
@@ -448,6 +459,15 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
               { id: 'schedule', label: 'Schedule & Progress', icon: CalendarClock },
               { id: 'gallery', label: `Foto Hasil Project (${allPhotos.length})`, icon: Images },
               { id: 'staff', label: `Akses Staff (${staffAccounts.length})`, icon: ShieldCheck },
+              ...(isAdmin
+                ? [
+                    {
+                      id: 'database',
+                      label: 'Database Supabase',
+                      icon: Database,
+                    },
+                  ]
+                : []),
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -1544,6 +1564,11 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* ======================= TAB: DATABASE & SUPABASE (KHUSUS ADMINISTRATOR) ======================= */}
+        {activeTab === 'database' && isAdmin && (
+          <DatabaseSupabaseSection />
         )}
       </main>
 

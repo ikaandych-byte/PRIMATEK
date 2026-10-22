@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MACHINE_FACILITY_LIST } from '../data/machines';
+import { getFacilityToolsFromDb } from '../services/contentService';
 import { Wrench, Search, Gauge } from 'lucide-react';
 import facilityImg from '../assets/images/hero_industrial_automation_1790239853481.jpg';
 import { useTheme } from '../context/ThemeContext';
@@ -10,8 +11,21 @@ export const FacilitiesSection: React.FC = () => {
   const { language, t } = useLanguage();
   const isDark = theme === 'dark';
 
+  const [toolsList, setToolsList] = useState<{ name: string; count: number; type: string }[]>(MACHINE_FACILITY_LIST);
   const [filterType, setFilterType] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
+
+  useEffect(() => {
+    let isMounted = true;
+    getFacilityToolsFromDb().then((data) => {
+      if (isMounted && data && data.length > 0) {
+        setToolsList(data);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const types = [
     { id: 'all', label: language === 'en' ? 'All Workshop Machinery' : 'Semua Mesin Pabrik' },
@@ -22,7 +36,7 @@ export const FacilitiesSection: React.FC = () => {
     { id: 'Quality Metrology', label: language === 'en' ? 'CMM & Metrology Lab' : 'CMM & Laboratorium Ukur' },
   ];
 
-  const filteredTools = MACHINE_FACILITY_LIST.filter((tool) => {
+  const filteredTools = toolsList.filter((tool) => {
     if (filterType !== 'all' && tool.type !== filterType) return false;
     if (
       searchTerm.trim() !== '' &&
@@ -33,7 +47,7 @@ export const FacilitiesSection: React.FC = () => {
     return true;
   });
 
-  const totalUnits = MACHINE_FACILITY_LIST.reduce((acc, curr) => acc + curr.count, 0);
+  const totalUnits = toolsList.reduce((acc, curr) => acc + curr.count, 0);
 
   return (
     <section id="fasilitas" className="py-12 sm:py-16">

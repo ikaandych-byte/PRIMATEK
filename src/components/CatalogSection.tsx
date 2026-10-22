@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   SlidersHorizontal,
@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { MACHINES_DATA } from '../data/machines';
+import { getMachinesFromDb } from '../services/contentService';
 import { MachineItem, MachineCategory } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -37,11 +38,24 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
   const { language, t } = useLanguage();
   const isDark = theme === 'dark';
 
+  const [rawMachines, setRawMachines] = useState<MachineItem[]>(MACHINES_DATA);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProcess, setSelectedProcess] = useState<string>('all');
   const [selectedTonnage, setSelectedTonnage] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [compareList, setCompareList] = useState<MachineItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getMachinesFromDb().then((data) => {
+      if (isMounted && data && data.length > 0) {
+        setRawMachines(data);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Unique process options
   const processOptions = useMemo(() => {
@@ -92,7 +106,7 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
 
   // Filtering Logic
   const filteredMachines = useMemo(() => {
-    return MACHINES_DATA.map((raw) => getLocalizedMachine(raw, language)).filter((item) => {
+    return rawMachines.map((raw) => getLocalizedMachine(raw, language)).filter((item) => {
       // Category Filter
       if (selectedCategory !== 'all' && item.category !== selectedCategory) {
         return false;

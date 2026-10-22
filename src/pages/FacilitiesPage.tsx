@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FacilitiesSection } from '../components/FacilitiesSection';
 import { AppPage } from '../components/Navbar';
 import {
@@ -11,6 +11,12 @@ import {
 import { COMPANY_INFO } from '../data/company';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import {
+  getPlantPillarsFromDb,
+  getWorkflowsFromDb,
+  PlantPillarRecord,
+  ManufacturingWorkflowRecord,
+} from '../services/contentService';
 import facilitiesHeroImg from '../assets/images/cat_mass_production_1790239901539.jpg';
 
 interface FacilitiesPageProps {
@@ -26,7 +32,30 @@ export const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
   const { language, t } = useLanguage();
   const isDark = theme === 'dark';
 
-  const facilityPillars = [
+  const [dbPillars, setDbPillars] = useState<PlantPillarRecord[]>([]);
+  const [dbWorkflows, setDbWorkflows] = useState<ManufacturingWorkflowRecord[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getPlantPillarsFromDb().then((data) => {
+      if (isMounted && data) setDbPillars(data);
+    });
+    getWorkflowsFromDb().then((data) => {
+      if (isMounted && data) setDbWorkflows(data);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const facilityPillars = dbPillars.length > 0
+    ? dbPillars.map((p) => ({
+        title: language === 'en' ? p.title_en : p.title_id,
+        val: p.metric_value,
+        sub: language === 'en' ? p.sub_en : p.sub_id,
+        desc: language === 'en' ? p.desc_en : p.desc_id,
+      }))
+    : [
     {
       title: language === 'en' ? 'Land & Plant Footprint' : 'Lahan & Area Workshop',
       val: '2,806 m²',
@@ -65,7 +94,13 @@ export const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
     },
   ];
 
-  const workflowSteps = [
+  const workflowSteps = dbWorkflows.length > 0
+    ? dbWorkflows.map((w) => ({
+        step: w.step_number,
+        title: language === 'en' ? w.title_en : w.title_id,
+        desc: language === 'en' ? w.desc_en : w.desc_id,
+      }))
+    : [
     {
       step: '01',
       title: language === 'en' ? 'Engineering & 3D CAD/CAM' : 'Engineering & 3D CAD/CAM',
