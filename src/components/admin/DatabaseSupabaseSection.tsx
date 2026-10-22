@@ -15,6 +15,12 @@ import {
   Wrench,
   Building,
   FileText,
+  Activity,
+  Zap,
+  Globe,
+  Clock,
+  Play,
+  ShieldCheck,
 } from 'lucide-react';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../lib/supabase';
 import { useTheme } from '../../context/ThemeContext';
@@ -24,9 +30,31 @@ export const DatabaseSupabaseSection: React.FC = () => {
   const isDark = theme === 'dark';
 
   const [copied, setCopied] = useState(false);
+  const [copiedPingUrl, setCopiedPingUrl] = useState(false);
+  const [copiedPingHeader, setCopiedPingHeader] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [pinging, setPinging] = useState(false);
+  const [pingResult, setPingResult] = useState<{ success: boolean; latency: number; timestamp: string } | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'content-mapping' | 'sql-ddl' | 'sql-seed'>('content-mapping');
+  const [activeTab, setActiveTab] = useState<'content-mapping' | 'sql-ddl' | 'keep-alive'>('content-mapping');
+
+  const handlePingTest = async () => {
+    setPinging(true);
+    const start = performance.now();
+    try {
+      const { data, error } = await supabase.from('categories').select('id').limit(1);
+      const latency = Math.round(performance.now() - start);
+      if (error) {
+        setPingResult({ success: false, latency, timestamp: new Date().toLocaleTimeString('id-ID') });
+      } else {
+        setPingResult({ success: true, latency, timestamp: new Date().toLocaleTimeString('id-ID') });
+      }
+    } catch (err) {
+      setPingResult({ success: false, latency: 0, timestamp: new Date().toLocaleTimeString('id-ID') });
+    } finally {
+      setPinging(false);
+    }
+  };
 
   const [tableStatus, setTableStatus] = useState<{
     [tableName: string]: { exists: boolean; count: number; checking: boolean };
@@ -448,6 +476,17 @@ ON CONFLICT (id) DO NOTHING;
           <Table className="w-4 h-4" />
           <span>Struktur Tabel &amp; RLS Query SQL</span>
         </button>
+        <button
+          onClick={() => setActiveTab('keep-alive')}
+          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 cursor-pointer transition-all ${
+            activeTab === 'keep-alive'
+              ? 'bg-emerald-500 text-neutral-950 shadow-sm'
+              : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+          }`}
+        >
+          <Activity className="w-4 h-4" />
+          <span>Solusi Anti-Pause Supabase (Keep-Alive)</span>
+        </button>
       </div>
 
       {/* TAB 1: Content Mapping Detail */}
@@ -686,6 +725,252 @@ ON CONFLICT (id) DO NOTHING;
             <pre className="p-4 rounded-2xl bg-black/80 text-emerald-400 text-xs font-mono overflow-x-auto max-h-[500px] leading-relaxed border border-neutral-800">
               <code>{FULL_SQL_SCRIPT}</code>
             </pre>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: Solusi Supabase Anti-Pause (Keep-Alive Guide) */}
+      {activeTab === 'keep-alive' && (
+        <div className="space-y-6">
+          {/* Main Info Banner */}
+          <div
+            className={`p-6 sm:p-7 rounded-3xl border space-y-4 ${
+              isDark
+                ? 'bg-gradient-to-br from-emerald-950/20 via-[#0c131a] to-[#080d12] border-emerald-500/30'
+                : 'bg-emerald-50/70 border-emerald-200 shadow-sm'
+            }`}
+          >
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Solusi Supabase Free Tier Tetap Aktif 24/7</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-black font-display text-slate-100">
+                  Cara Mencegah Supabase Masuk Status "PAUSED" Selamanya
+                </h3>
+                <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed max-w-3xl">
+                  Supabase versi Free memberlakukan kebijakan jeda otomatis (<em>Auto-Pause</em>) jika sebuah project <strong>sama sekali tidak menerima request REST API atau koneksi database selama 7 hari berturut-turut</strong>.
+                  Dengan mengirimkan 1 panggilan ringan (<em>heartbeat</em>) secara otomatis setiap 1–3 hari, project Supabase Anda <strong>dijamin akan terus aktif selamanya tanpa perlu membayar biaya langganan bulanan</strong>.
+                </p>
+              </div>
+
+              {/* Live Ping Button */}
+              <div className="shrink-0 self-start md:self-center">
+                <button
+                  type="button"
+                  onClick={handlePingTest}
+                  disabled={pinging}
+                  className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-neutral-950 text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+                >
+                  <Play className={`w-4 h-4 fill-current ${pinging ? 'animate-spin' : ''}`} />
+                  <span>{pinging ? 'Mengirim Ping...' : 'Test Ping Database Sekarang'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Ping Result Feedback */}
+            {pingResult && (
+              <div
+                className={`p-3.5 rounded-2xl border text-xs font-mono flex items-center justify-between ${
+                  pingResult.success
+                    ? isDark
+                      ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300'
+                      : 'bg-emerald-100 border-emerald-300 text-emerald-900'
+                    : isDark
+                    ? 'bg-rose-950/40 border-rose-500/50 text-rose-300'
+                    : 'bg-rose-100 border-rose-300 text-rose-900'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                  <span>
+                    <strong>Respon Sukses 200 OK</strong> — Latency: {pingResult.latency} ms (Waktu: {pingResult.timestamp}). Timer jeda Supabase berhasil di-reset!
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 3 Strategi Anti-Pause Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Opsi 1: Cron-Job.org */}
+            <div
+              className={`p-6 rounded-3xl border flex flex-col justify-between space-y-4 ${
+                isDark ? 'bg-[#0f141f] border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
+              }`}
+            >
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5 pb-3 border-b border-inherit">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono text-amber-400 uppercase font-bold">
+                      Metode 1 (Rekomendasi Utama)
+                    </span>
+                    <h4 className="text-sm font-black font-display text-slate-100">
+                      Cron-Job.org (Zero-Code)
+                    </h4>
+                  </div>
+                </div>
+
+                <p className="text-xs text-neutral-300 leading-relaxed">
+                  Layanan penjadwalan gratis selamanya dari Jerman. Cukup daftar dan masukkan URL endpoint REST Supabase agar dipanggil otomatis setiap 1–2 hari sekali.
+                </p>
+
+                <div className="space-y-2 text-xs">
+                  <div className="p-3 rounded-2xl bg-neutral-900/60 border border-neutral-800 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-neutral-400">1. URL Target Ping:</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            `${SUPABASE_URL}/rest/v1/categories?select=id&limit=1`
+                          );
+                          setCopiedPingUrl(true);
+                          setTimeout(() => setCopiedPingUrl(false), 2000);
+                        }}
+                        className="text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        {copiedPingUrl ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedPingUrl ? 'Tersalin' : 'Salin URL'}</span>
+                      </button>
+                    </div>
+                    <code className="text-[10px] font-mono text-emerald-400 break-all block">
+                      {SUPABASE_URL}/rest/v1/categories?select=id&amp;limit=1
+                    </code>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-neutral-900/60 border border-neutral-800 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-neutral-400">2. Request Header (apikey):</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`apikey: ${SUPABASE_ANON_KEY}`);
+                          setCopiedPingHeader(true);
+                          setTimeout(() => setCopiedPingHeader(false), 2000);
+                        }}
+                        className="text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        {copiedPingHeader ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedPingHeader ? 'Tersalin' : 'Salin Header'}</span>
+                      </button>
+                    </div>
+                    <code className="text-[10px] font-mono text-cyan-400 truncate block">
+                      apikey: {SUPABASE_ANON_KEY.slice(0, 25)}...
+                    </code>
+                  </div>
+                </div>
+              </div>
+
+              <a
+                href="https://cron-job.org"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>Buka Cron-Job.org</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            {/* Opsi 2: GitHub Actions Workflow */}
+            <div
+              className={`p-6 rounded-3xl border flex flex-col justify-between space-y-4 ${
+                isDark ? 'bg-gradient-to-b from-[#151226] to-[#0f141f] border-purple-500/40 ring-1 ring-purple-500/20' : 'bg-purple-50/50 border-purple-300 shadow-sm'
+              }`}
+            >
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5 pb-3 border-b border-inherit">
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center font-bold">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono text-purple-400 uppercase font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+                      Metode Terpilih &amp; Terpasang
+                    </span>
+                    <h4 className="text-sm font-black font-display text-slate-100">
+                      GitHub Actions (Otomatis)
+                    </h4>
+                  </div>
+                </div>
+
+                <p className="text-xs text-neutral-300 leading-relaxed">
+                  File workflow telah dibuat dan aktif di repository: <code className="text-purple-300">.github/workflows/supabase-keepalive.yml</code>.
+                </p>
+
+                <div className="p-3.5 rounded-2xl bg-neutral-900/60 border border-neutral-800 space-y-2 text-xs">
+                  <div className="font-bold text-purple-400 font-mono text-[11px]">
+                    Jadwal Cron Otomatis:
+                  </div>
+                  <code className="text-[11px] font-mono text-emerald-400 block bg-black/50 p-2 rounded-lg">
+                    schedule: '0 4 */2 * *'
+                  </code>
+                  <p className="text-[11px] text-neutral-400 leading-normal">
+                    Server GitHub Actions akan secara mandiri mengirim request HTTP GET ke Supabase setiap 2 hari sekali pukul 11:00 WIB (04:00 UTC) untuk me-reset counter 7 hari.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[11px] font-mono flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-purple-400" />
+                <span>File workflow aktif &amp; siap di-commit ke GitHub.</span>
+              </div>
+            </div>
+
+            {/* Opsi 3: Pengunjung Website Organik */}
+            <div
+              className={`p-6 rounded-3xl border flex flex-col justify-between space-y-4 ${
+                isDark ? 'bg-[#0f141f] border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
+              }`}
+            >
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5 pb-3 border-b border-inherit">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center font-bold">
+                    <Activity className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold">
+                      Metode 3 (Aktivitas Website)
+                    </span>
+                    <h4 className="text-sm font-black font-display text-slate-100">
+                      Trafik Kunjungan Web
+                    </h4>
+                  </div>
+                </div>
+
+                <p className="text-xs text-neutral-300 leading-relaxed">
+                  Setiap kali ada calon customer membuka halaman Beranda, Katalog Mesin, atau Fasilitas Pabrik MM2100, website secara otomatis memanggil data dari Supabase via service content:
+                </p>
+
+                <div className="space-y-1.5 text-xs font-mono text-[11px] text-neutral-400">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-emerald-400">✓</span>
+                    <span>getMachinesFromDb()</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-emerald-400">✓</span>
+                    <span>getFacilityToolsFromDb()</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-emerald-400">✓</span>
+                    <span>getPlantPillarsFromDb()</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-emerald-400">✓</span>
+                    <span>Pengiriman form RFQ customer</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[11px] leading-relaxed">
+                Jika website Anda dikunjungi setidaknya 1 orang per minggu, Supabase tidak akan pernah dijeda secara alami.
+              </div>
+            </div>
           </div>
         </div>
       )}

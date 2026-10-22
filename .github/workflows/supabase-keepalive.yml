@@ -1,0 +1,46 @@
+name: Supabase Keep-Alive Heartbeat
+
+on:
+  schedule:
+    # Berjalan otomatis setiap 2 hari sekali pada jam 04:00 UTC (11:00 WIB)
+    # Sangat aman mencegah batas 7 hari jeda (auto-pause) Supabase Free Tier
+    - cron: '0 4 */2 * *'
+  workflow_dispatch: # Memungkinkan tombol "Run workflow" manual kapan saja dari tab Actions di GitHub
+
+jobs:
+  keep-alive:
+    name: Ping Supabase REST API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Heartbeat to Supabase REST API
+        run: |
+          echo "======================================================="
+          echo "Memulai Ping Heartbeat Supabase PT. PRIMA TEKNIK TRADA"
+          echo "Waktu Eksekusi: $(date -u)"
+          echo "======================================================="
+
+          URL="https://yclzqhvvbejrouknnilj.supabase.co/rest/v1/categories?select=id&limit=1"
+          API_KEY="${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljbHpxaHZ2YmVqcm91a25uaWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MzUwMDMsImV4cCI6MjEwODIxMTAwM30.IYmaDEYvmyPCyVaXYIOXGiyTFDxQkqR3xPTYGe95mAA' }}"
+
+          echo "Mengirim request HTTP GET ke: $URL"
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}\nLATENCY:%{time_total}s" -X GET "$URL" \
+            -H "apikey: $API_KEY" \
+            -H "Authorization: Bearer $API_KEY")
+
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
+          LATENCY=$(echo "$RESPONSE" | grep "LATENCY" | cut -d':' -f2)
+
+          echo "Response Status: $HTTP_STATUS"
+          echo "Response Latency: $LATENCY"
+
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "======================================================="
+            echo "BERHASIL: Database Supabase aktif & timer jeda 7 hari berhasil di-reset!"
+            echo "======================================================="
+            exit 0
+          else
+            echo "======================================================="
+            echo "PERINGATAN: Respon tidak valid ($HTTP_STATUS). Cek URL atau API key."
+            echo "======================================================="
+            exit 1
+          fi
