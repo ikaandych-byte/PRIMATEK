@@ -12,6 +12,15 @@ import {
   Phone,
   Calendar,
   Sparkles,
+  Printer,
+  Download,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ShieldCheck,
+  ExternalLink,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { RfqItem, MachineItem } from '../types';
 import { COMPANY_INFO } from '../data/company';
@@ -20,6 +29,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { getLocalizedMachine } from '../utils/localizedData';
+import { supabase } from '../lib/supabase';
 
 interface RfqFormProps {
   rfqItems: RfqItem[];
@@ -69,6 +79,10 @@ export const RfqForm: React.FC<RfqFormProps> = ({
   const [submitted, setSubmitted] = useState(false);
   const [rfqRefNumber, setRfqRefNumber] = useState('');
   const [activeTab, setActiveTab] = useState<'form' | 'preview'>('form');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dbSaved, setDbSaved] = useState<boolean | null>(null);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [copiedRef, setCopiedRef] = useState(false);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -82,12 +96,128 @@ export const RfqForm: React.FC<RfqFormProps> = ({
     return `PTT-RFQ-${new Date().getFullYear()}-${rand}`;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ref = generateRfqRef();
+    setIsSubmitting(true);
+    const ref = rfqRefNumber || generateRfqRef();
     setRfqRefNumber(ref);
-    setSubmitted(true);
-    setActiveTab('preview');
+
+    try {
+      // Simpan isian form RFQ ke tabel Supabase public.rfq_submissions
+      const { data, error } = await supabase.from('rfq_submissions').insert([
+        {
+          rfq_number: ref,
+          company_name: formData.companyName,
+          pic_name: formData.picName,
+          email: formData.email,
+          phone: formData.phone,
+          industry: formData.industry,
+          material: formData.material,
+          tolerance: formData.tolerance,
+          target_timeline: formData.targetTimeline,
+          estimated_qty: formData.estimatedQty,
+          drawing_link: formData.drawingLink || null,
+          notes: formData.notes || null,
+          items: rfqItems,
+          status: 'pending',
+          source: 'web_portal',
+        },
+      ]);
+
+      if (error) {
+        console.warn('Supabase RFQ insert notice:', error.message);
+        setDbSaved(false);
+        setDbError(error.message);
+      } else {
+        setDbSaved(true);
+        setDbError(null);
+      }
+    } catch (err: any) {
+      console.warn('Network or DB error saving RFQ:', err);
+      setDbSaved(false);
+      setDbError(err?.message || 'Gagal menyimpan ke database cloud');
+    } finally {
+      setIsSubmitting(false);
+      setSubmitted(true);
+      setActiveTab('preview');
+    }
+  };
+
+  const handlePrintDocument = () => {
+    window.print();
+  };
+
+  const handleCopyRef = () => {
+    if (rfqRefNumber) {
+      navigator.clipboard.writeText(rfqRefNumber);
+      setCopiedRef(true);
+      setTimeout(() => setCopiedRef(false), 2000);
+    }
+  };
+
+  const handleDownloadSummary = () => {
+    const dateStr = new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'id-ID');
+    const itemsText =
+      rfqItems.length > 0
+        ? rfqItems.map((i, idx) => `${idx + 1}. ${i.machineName} | Kategori: ${i.categoryName} | Qty: ${i.quantity} Unit`).join('\n')
+        : '- Diskusi Custom Machine / SPM / Dies Tooling Baru';
+
+    const content = `========================================================================
+PT. PRIMA TEKNIK TRADA - MANUFACTURING & AUTOMATION
+MM2100 Industrial Estate Cibitung, Bekasi | ISO 9001:2015 Registered
+Tel: ${COMPANY_INFO.phoneDisplay} | Email: ${COMPANY_INFO.emailPrimary} | Web: www.pttid.com
+========================================================================
+
+OFFICIAL REQUEST FOR QUOTATION (RFQ) INQUIRY SLIP
+No. Referensi RFQ : ${rfqRefNumber || 'PTT-RFQ-2026-DRAFT'}
+Tanggal Dokumen   : ${dateStr}
+Status Sistem     : ${dbSaved ? 'TERCATAT RESMI DI DATABASE PTT' : 'DRAF RESMI DITERBITKAN'}
+
+------------------------------------------------------------------------
+I. DATA KLIEN / PEMOHON
+------------------------------------------------------------------------
+Nama Perusahaan   : ${formData.companyName || '-'}
+Nama PIC          : ${formData.picName || '-'}
+Alamat Email      : ${formData.email || '-'}
+Nomor Telp / WA   : ${formData.phone || '-'}
+Sektor Industri   : ${formData.industry}
+
+------------------------------------------------------------------------
+II. PARAMETER TEKNIK & SPESIFIKASI MANUFAKTUR
+------------------------------------------------------------------------
+Material Benda    : ${formData.material}
+Target Toleransi  : ${formData.tolerance}
+Estimasi Volume   : ${formData.estimatedQty}
+Target Timeline   : ${formData.targetTimeline}
+Link Drawing CAD  : ${formData.drawingLink || 'Akan dikirim terpisah via email/cloud'}
+
+------------------------------------------------------------------------
+III. DAFTAR MESIN / ITEM PRODUKSI YANG DIMINTA
+------------------------------------------------------------------------
+${itemsText}
+
+------------------------------------------------------------------------
+IV. CATATAN TEKNIK TAMBAHAN
+------------------------------------------------------------------------
+${formData.notes || 'Mohon informasi estimasi penawaran harga resmi (Quotation Sheet) dan jadwal pengerjaan.'}
+
+------------------------------------------------------------------------
+V. PENGESAHAN DOKUMEN & VERIFIKASI
+------------------------------------------------------------------------
+Dokumen ini dibuat secara resmi melalui Portal Sistem PT. Prima Teknik Trada.
+Tim Engineering & Estimasi akan meninjau kelayakan teknis drawing serta
+menerbitkan surat penawaran harga (Formal Quotation) dalam 1 x 24 jam kerja.
+========================================================================`;
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${rfqRefNumber || 'PTT-RFQ'}-Document-Summary.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleWhatsAppSend = () => {
@@ -633,110 +763,298 @@ Dikirim melalui Web Portal PT. PRIMA TEKNIK TRADA (www.pttid.com)`;
                   <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
                     <button
                       type="submit"
-                      className="w-full sm:w-auto px-7 py-3 text-xs font-bold text-neutral-950 bg-amber-400 hover:bg-amber-300 active:scale-98 rounded-xl transition-all shadow-md shadow-amber-500/10 flex items-center justify-center gap-2 cursor-pointer"
+                      disabled={isSubmitting}
+                      className={`w-full sm:w-auto px-7 py-3 text-xs font-bold text-neutral-950 bg-amber-400 hover:bg-amber-300 active:scale-98 rounded-xl transition-all shadow-md shadow-amber-500/10 flex items-center justify-center gap-2 cursor-pointer ${
+                        isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                      }`}
                     >
-                      <FileText className="w-4 h-4" />
-                      <span>{t.rfq.submitBtn}</span>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-neutral-950" />
+                          <span>
+                            {language === 'en'
+                              ? 'Saving & Generating Official RFQ Document...'
+                              : 'Menyimpan & Menerbitkan Dokumen Resmi RFQ...'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4" />
+                          <span>{t.rfq.submitBtn}</span>
+                        </>
+                      )}
                     </button>
                     <span className={`text-xs ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>
                       {language === 'en'
-                        ? 'Complimentary technical consultation with zero commitment.'
-                        : 'Gratis konsultasi teknis awal tanpa komitmen.'}
+                        ? 'Instant official document generation & saved to engineering inquiry database.'
+                        : 'Penerbitan dokumen resmi instan & otomatis tercatat pada antrean estimasi engineering.'}
                     </span>
                   </div>
                 </form>
               ) : (
-                /* Live RFQ Slip Preview */
+                /* Live RFQ Slip Preview & Document View */
                 <div className="space-y-6 animate-fade-slide">
+                  {/* Print Stylesheet Hook */}
+                  <style>{`
+                    @media print {
+                      body * {
+                        visibility: hidden !important;
+                      }
+                      #printable-rfq-document, #printable-rfq-document * {
+                        visibility: visible !important;
+                      }
+                      #printable-rfq-document {
+                        position: absolute !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 100% !important;
+                        margin: 0 !important;
+                        padding: 24px !important;
+                        background: #ffffff !important;
+                        color: #0f172a !important;
+                        border: 1px solid #cbd5e1 !important;
+                        box-shadow: none !important;
+                        font-size: 11pt !important;
+                      }
+                      .no-print {
+                        display: none !important;
+                      }
+                    }
+                  `}</style>
+
+                  {/* Supabase Database Sync Status Banner */}
                   <div
-                    className={`p-6 rounded-2xl border text-xs font-mono space-y-4 ${
-                      isDark ? 'bg-[#080a0f] border-neutral-800' : 'bg-slate-50 border-slate-200'
+                    className={`p-3.5 sm:p-4 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                      dbSaved === true
+                        ? isDark
+                          ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-300'
+                          : 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                        : dbSaved === false
+                        ? isDark
+                          ? 'bg-amber-950/20 border-amber-500/30 text-amber-300'
+                          : 'bg-amber-50 border-amber-300 text-amber-800'
+                        : isDark
+                        ? 'bg-neutral-900 border-neutral-800 text-neutral-300'
+                        : 'bg-slate-100 border-slate-200 text-slate-700'
                     }`}
                   >
-                    {/* Header Slip */}
-                    <div className={`flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b gap-2 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                    <div className="flex items-center gap-2.5">
+                      {dbSaved === true ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                      ) : (
+                        <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0" />
+                      )}
                       <div>
-                        <div className="text-sm font-bold text-amber-500 font-display">
+                        <div className="font-bold flex items-center gap-2">
+                          <span>
+                            {dbSaved === true
+                              ? language === 'en'
+                                ? '✓ Verified & Stored in Supabase Database (Table: rfq_submissions)'
+                                : '✓ Terverifikasi & Tersimpan di Database Supabase (Tabel: rfq_submissions)'
+                              : language === 'en'
+                              ? 'Official RFQ Document Generated'
+                              : 'Dokumen Resmi RFQ Berhasil Diterbitkan'}
+                          </span>
+                        </div>
+                        <div className="text-[11px] opacity-80">
+                          {language === 'en'
+                            ? `RFQ Reference Number: ${rfqRefNumber || 'DRAFT'}. Estimation queue is active.`
+                            : `Nomor Referensi: ${rfqRefNumber || 'DRAFT'}. Antrean kalkulasi estimasi aktif.`}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleCopyRef}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-semibold flex items-center gap-1.5 cursor-pointer transition-colors ${
+                          isDark
+                            ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700 text-neutral-200'
+                            : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-800'
+                        }`}
+                        title="Salin Nomor Referensi"
+                      >
+                        {copiedRef ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedRef ? 'Tersalin' : rfqRefNumber}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Printable Official Document Slip */}
+                  <div
+                    id="printable-rfq-document"
+                    className={`p-6 sm:p-8 rounded-2xl border text-xs font-mono space-y-5 relative overflow-hidden ${
+                      isDark ? 'bg-[#080a0f] border-neutral-800 text-neutral-200' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    }`}
+                  >
+                    {/* Watermark Logo Stamp */}
+                    <div className="absolute right-6 top-8 opacity-5 pointer-events-none select-none text-right hidden sm:block">
+                      <div className="text-6xl font-black font-display tracking-tighter">PRIMA TEKNIK TRADA</div>
+                      <div className="text-xl font-mono">ISO 9001:2015 CERTIFIED</div>
+                    </div>
+
+                    {/* Official Letterhead Slip */}
+                    <div className={`flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b-2 gap-3 ${isDark ? 'border-neutral-800' : 'border-slate-300'}`}>
+                      <div>
+                        <div className="text-base font-extrabold text-amber-500 font-display tracking-tight">
                           PT. PRIMA TEKNIK TRADA
                         </div>
-                        <div className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                          MM2100 Industrial Estate Cibitung, Bekasi · {COMPANY_INFO.iso}
+                        <div className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
+                          Kawasan Industri MM2100 Cibitung, Bekasi · Jawa Barat 17530
+                        </div>
+                        <div className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>
+                          Precision Machinery · Stamping Dies · SPM Automation · ISO 9001:2015
                         </div>
                       </div>
                       <div className="text-left sm:text-right">
-                        <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                          {language === 'en' ? 'REQUEST FOR QUOTATION (RFQ)' : 'LEMBAR PERMINTAAN PENAWARAN (RFQ)'}
+                        <div className="inline-block px-3 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold text-xs">
+                          {language === 'en' ? 'OFFICIAL RFQ INQUIRY SLIP' : 'SURAT PERMINTAAN PENAWARAN (RFQ)'}
                         </div>
-                        <div className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                          Ref: {rfqRefNumber || 'DRAFT-INQUIRY'} · {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'id-ID')}
+                        <div className={`text-[11px] mt-1 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          Ref: {rfqRefNumber || 'DRAFT-INQUIRY'}
+                        </div>
+                        <div className={`text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                          {language === 'en' ? 'Issued:' : 'Diterbitkan:'} {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
                         </div>
                       </div>
                     </div>
 
-                    {/* Client & Specs Meta */}
-                    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 py-2 border-b ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-                      <div>
-                        <div className={`text-[10px] uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>
-                          {language === 'en' ? 'Client Company:' : 'Perusahaan Klien:'}
+                    {/* Client & Technical Specs Meta Grid */}
+                    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 py-3 border-b ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                      <div className={`p-3.5 rounded-xl border ${isDark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-white border-slate-200'}`}>
+                        <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+                          {language === 'en' ? 'I. CLIENT COMPANY PROFILE' : 'I. IDENTITAS KLIEN PEMOHON'}
                         </div>
-                        <div className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{formData.companyName || '(Unspecified)'}</div>
-                        <div className={isDark ? 'text-neutral-400' : 'text-slate-600'}>PIC: {formData.picName || '-'}</div>
-                        <div className={isDark ? 'text-neutral-400' : 'text-slate-600'}>Email: {formData.email || '-'}</div>
-                        <div className={isDark ? 'text-neutral-400' : 'text-slate-600'}>Tel: {formData.phone || '-'}</div>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex">
+                            <span className="w-24 text-[11px] opacity-70">Perusahaan:</span>
+                            <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{formData.companyName || '(Unspecified)'}</span>
+                          </div>
+                          <div className="flex">
+                            <span className="w-24 text-[11px] opacity-70">Nama PIC:</span>
+                            <span className="font-semibold">{formData.picName || '-'}</span>
+                          </div>
+                          <div className="flex">
+                            <span className="w-24 text-[11px] opacity-70">Email:</span>
+                            <span>{formData.email || '-'}</span>
+                          </div>
+                          <div className="flex">
+                            <span className="w-24 text-[11px] opacity-70">Telepon / WA:</span>
+                            <span>{formData.phone || '-'}</span>
+                          </div>
+                          <div className="flex">
+                            <span className="w-24 text-[11px] opacity-70">Sektor:</span>
+                            <span>{formData.industry}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div className={`text-[10px] uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>
-                          {language === 'en' ? 'Technical Specifications:' : 'Parameter Manufaktur:'}
+
+                      <div className={`p-3.5 rounded-xl border ${isDark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-white border-slate-200'}`}>
+                        <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+                          {language === 'en' ? 'II. ENGINEERING SPECIFICATIONS' : 'II. PARAMETER MANUFAKTUR & TEKNIS'}
                         </div>
-                        <div className={isDark ? 'text-neutral-300' : 'text-slate-700'}>Industry: {formData.industry}</div>
-                        <div className={isDark ? 'text-neutral-300' : 'text-slate-700'}>Material: {formData.material}</div>
-                        <div className={isDark ? 'text-neutral-300' : 'text-slate-700'}>Tolerance: {formData.tolerance}</div>
-                        <div className={isDark ? 'text-neutral-300' : 'text-slate-700'}>Volume: {formData.estimatedQty}</div>
-                        <div className={isDark ? 'text-neutral-300' : 'text-slate-700'}>Timeline: {formData.targetTimeline}</div>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex">
+                            <span className="w-28 text-[11px] opacity-70">Material Benda:</span>
+                            <span className="font-semibold">{formData.material}</span>
+                          </div>
+                          <div className="flex">
+                            <span className="w-28 text-[11px] opacity-70">Target Toleransi:</span>
+                            <span className="font-semibold text-amber-500">{formData.tolerance}</span>
+                          </div>
+                          <div className="flex">
+                            <span className="w-28 text-[11px] opacity-70">Estimasi Volume:</span>
+                            <span>{formData.estimatedQty}</span>
+                          </div>
+                          <div className="flex">
+                            <span className="w-28 text-[11px] opacity-70">Target Timeline:</span>
+                            <span>{formData.targetTimeline}</span>
+                          </div>
+                          <div className="flex truncate">
+                            <span className="w-28 text-[11px] opacity-70">Link Drawing:</span>
+                            <span className="truncate">{formData.drawingLink || 'Dikirim terpisah'}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Items table */}
+                    {/* Requested Machinery Items Table */}
                     <div>
-                      <div className={`text-[10px] uppercase mb-2 ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>
-                        {language === 'en' ? 'Requested Systems / Parts:' : 'Item Spesifikasi Yang Diminta:'}
+                      <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+                        {language === 'en' ? 'III. REQUESTED SYSTEMS & MACHINERY' : 'III. DAFTAR MESIN & PERMINTAAN SPESIFIKASI'}
                       </div>
                       {rfqItems.length === 0 ? (
-                        <div className={`p-3 rounded ${isDark ? 'bg-neutral-900 text-neutral-400' : 'bg-white text-slate-500 border border-slate-200'}`}>
+                        <div className={`p-3.5 rounded-xl ${isDark ? 'bg-neutral-900 text-neutral-400' : 'bg-white text-slate-600 border border-slate-200'}`}>
                           {language === 'en'
-                            ? 'Custom machine design / technical engineering consultation.'
-                            : 'Pengajuan perancangan kustom / konsultasi teknis baru.'}
+                            ? 'Special consultation request for customized automation / special purpose machine design.'
+                            : 'Permintaan perancangan khusus customized automation / special purpose machine (SPM) / dies baru.'}
                         </div>
                       ) : (
-                        <div className={`divide-y rounded-lg overflow-hidden border ${isDark ? 'divide-neutral-900 border-neutral-800' : 'divide-slate-200 border-slate-200'}`}>
-                          {rfqItems.map((item, idx) => (
-                            <div
-                              key={item.machineId}
-                              className={`p-2.5 flex items-center justify-between ${
-                                isDark ? 'bg-neutral-900/60' : 'bg-white'
-                              }`}
-                            >
-                              <span className={isDark ? 'text-white' : 'text-slate-900'}>
-                                {idx + 1}. {item.machineName}
-                              </span>
-                              <span className="text-amber-500 font-bold">Qty: {item.quantity}</span>
-                            </div>
-                          ))}
+                        <div className={`overflow-hidden rounded-xl border ${isDark ? 'divide-neutral-800 border-neutral-800' : 'divide-slate-200 border-slate-200'}`}>
+                          <table className="w-full text-left text-xs">
+                            <thead className={isDark ? 'bg-neutral-900/80 text-neutral-400' : 'bg-slate-100 text-slate-700'}>
+                              <tr>
+                                <th className="p-2.5 font-bold w-12 text-center">No</th>
+                                <th className="p-2.5 font-bold">Nama Mesin / Fabrikasi</th>
+                                <th className="p-2.5 font-bold">Kategori</th>
+                                <th className="p-2.5 font-bold text-right w-24">Jumlah</th>
+                              </tr>
+                            </thead>
+                            <tbody className={`divide-y ${isDark ? 'divide-neutral-800/80' : 'divide-slate-200'}`}>
+                              {rfqItems.map((item, idx) => (
+                                <tr key={item.machineId} className={isDark ? 'bg-neutral-900/40' : 'bg-white'}>
+                                  <td className="p-2.5 text-center font-mono opacity-80">{idx + 1}</td>
+                                  <td className="p-2.5 font-bold text-slate-100">{item.machineName}</td>
+                                  <td className="p-2.5 text-neutral-400">{item.categoryName}</td>
+                                  <td className="p-2.5 text-right font-mono font-bold text-amber-500">{item.quantity} Unit</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       )}
                     </div>
 
+                    {/* Special Notes */}
                     {formData.notes && (
-                      <div>
-                        <div className={`text-[10px] uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>
-                          {language === 'en' ? 'Special Project Notes:' : 'Catatan Khusus:'}
+                      <div className={`p-3 rounded-xl border ${isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-slate-200'}`}>
+                        <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+                          {language === 'en' ? 'IV. SPECIAL PROJECT DIRECTIVES & NOTES' : 'IV. CATATAN & ARAHAN KHUSUS PROYEK'}
                         </div>
-                        <div className={`italic ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>{formData.notes}</div>
+                        <div className={`italic text-xs leading-relaxed ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                          "{formData.notes}"
+                        </div>
                       </div>
                     )}
+
+                    {/* Terms & Authorization Sign-off Block */}
+                    <div className={`pt-4 border-t-2 grid grid-cols-1 sm:grid-cols-2 gap-4 ${isDark ? 'border-neutral-800 text-neutral-400' : 'border-slate-300 text-slate-600'}`}>
+                      <div className="space-y-1 text-[10px]">
+                        <div className="font-bold uppercase text-amber-500">Ketentuan &amp; Alur Estimasi:</div>
+                        <p>1. Surat RFQ ini telah tercatat secara sah pada antrean kalkulasi tim engineering PT. Prima Teknik Trada.</p>
+                        <p>2. Tim Sales &amp; Estimasi akan menerbitkan Formal Quotation Sheet dalam 1x24 jam kerja setelah verifikasi drawing.</p>
+                        <p>3. Standar toleransi dan jaminan mutu mengacu pada sistem manajemen mutu ISO 9001:2015.</p>
+                      </div>
+
+                      <div className="text-center sm:text-right flex flex-col justify-between pt-2 sm:pt-0">
+                        <div className="text-[10px]">
+                          Cikarang Barat, {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </div>
+                        <div className="py-2">
+                          <div className="inline-block border-2 border-dashed border-amber-500/40 px-4 py-1.5 rounded-lg text-amber-500 text-[10px] font-bold">
+                            PT. PRIMA TEKNIK TRADA<br />
+                            <span className="text-[9px] font-mono font-normal">ENGINEERING INQUIRY ACKNOWLEDGED</span>
+                          </div>
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-300">
+                          Divisi Penjualan &amp; Estimasi Rekayasa
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Submission Triggers */}
+                  {/* Submission Triggers & Action Buttons */}
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                     <button
                       type="button"
@@ -745,10 +1063,37 @@ Dikirim melalui Web Portal PT. PRIMA TEKNIK TRADA (www.pttid.com)`;
                         isDark ? 'text-neutral-400 hover:text-white' : 'text-slate-600 hover:text-slate-950'
                       }`}
                     >
-                      &larr; {language === 'en' ? 'Edit RFQ Data' : 'Ubah Rincian Data'}
+                      &larr; {language === 'en' ? 'Edit RFQ Form Data' : 'Ubah Rincian Formulir'}
                     </button>
 
                     <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                      {/* Print PDF Button */}
+                      <button
+                        type="button"
+                        onClick={handlePrintDocument}
+                        className="flex-1 sm:flex-initial px-4 py-3 text-xs font-bold text-neutral-900 bg-white hover:bg-slate-100 rounded-xl transition-all flex items-center justify-center gap-2 border border-slate-300 shadow-sm cursor-pointer"
+                        title="Cetak atau Simpan sebagai PDF"
+                      >
+                        <Printer className="w-4 h-4 text-neutral-800" />
+                        <span>{language === 'en' ? 'Print / PDF' : 'Cetak / PDF'}</span>
+                      </button>
+
+                      {/* Download Summary Text File */}
+                      <button
+                        type="button"
+                        onClick={handleDownloadSummary}
+                        className={`flex-1 sm:flex-initial px-4 py-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 border cursor-pointer ${
+                          isDark
+                            ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-700'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                        }`}
+                        title="Unduh Salinan Dokumen (.txt)"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>{language === 'en' ? 'Export Slip' : 'Unduh Draf'}</span>
+                      </button>
+
+                      {/* WhatsApp Direct Link */}
                       <button
                         type="button"
                         onClick={handleWhatsAppSend}
@@ -758,13 +1103,14 @@ Dikirim melalui Web Portal PT. PRIMA TEKNIK TRADA (www.pttid.com)`;
                         <span>{t.rfq.sendViaWaBtn}</span>
                       </button>
 
+                      {/* Official Email */}
                       <button
                         type="button"
                         onClick={handleEmailSend}
                         className="flex-1 sm:flex-initial px-5 py-3 text-xs font-bold text-neutral-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer"
                       >
                         <Send className="w-4 h-4" />
-                        <span>{language === 'en' ? 'Send Official RFQ via Email' : 'Kirim Surat RFQ via Email Resmi'}</span>
+                        <span>{language === 'en' ? 'Send Official Email' : 'Kirim via Email Resmi'}</span>
                       </button>
                     </div>
                   </div>

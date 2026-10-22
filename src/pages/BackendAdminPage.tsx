@@ -68,6 +68,7 @@ import { ManageMilestonesModal } from '../components/admin/ManageMilestonesModal
 import { FinanceControlSection } from '../components/admin/FinanceControlSection';
 import { DepartmentWorkspace } from '../components/departments/DepartmentWorkspace';
 import { DatabaseSupabaseSection } from '../components/admin/DatabaseSupabaseSection';
+import { RfqInquiriesSection } from '../components/admin/RfqInquiriesSection';
 
 interface BackendAdminPageProps {
   onBackToHome: () => void;
@@ -83,7 +84,8 @@ type AdminTab =
   | 'schedule'
   | 'gallery'
   | 'staff'
-  | 'database';
+  | 'database'
+  | 'rfqs';
 
 const getDepartmentBadge = (dept?: string) => {
   switch (dept) {
@@ -459,6 +461,7 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
               { id: 'schedule', label: 'Schedule & Progress', icon: CalendarClock },
               { id: 'gallery', label: `Foto Hasil Project (${allPhotos.length})`, icon: Images },
               { id: 'staff', label: `Akses Staff (${staffAccounts.length})`, icon: ShieldCheck },
+              { id: 'rfqs', label: 'Inquiry RFQ Masuk', icon: FileText },
               ...(isAdmin
                 ? [
                     {
@@ -1569,6 +1572,11 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
         {/* ======================= TAB: DATABASE & SUPABASE (KHUSUS ADMINISTRATOR) ======================= */}
         {activeTab === 'database' && isAdmin && (
           <DatabaseSupabaseSection />
+        )}
+
+        {/* ======================= TAB: INQUIRY RFQ MASUK ======================= */}
+        {activeTab === 'rfqs' && (
+          <RfqInquiriesSection />
         )}
       </main>
 

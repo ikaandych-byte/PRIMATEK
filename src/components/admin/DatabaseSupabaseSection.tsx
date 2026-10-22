@@ -14,6 +14,7 @@ import {
   Home,
   Wrench,
   Building,
+  FileText,
 } from 'lucide-react';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../lib/supabase';
 import { useTheme } from '../../context/ThemeContext';
@@ -38,6 +39,7 @@ export const DatabaseSupabaseSection: React.FC = () => {
     home_capabilities: { exists: false, count: 0, checking: false },
     clients_and_partners: { exists: false, count: 0, checking: false },
     company_settings: { exists: false, count: 0, checking: false },
+    rfq_submissions: { exists: false, count: 0, checking: false },
   });
 
   const checkTables = async () => {
@@ -53,6 +55,7 @@ export const DatabaseSupabaseSection: React.FC = () => {
       'home_capabilities',
       'clients_and_partners',
       'company_settings',
+      'rfq_submissions',
     ];
 
     const newStatus: any = {};
@@ -230,6 +233,31 @@ CREATE TABLE IF NOT EXISTS public.company_settings (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 9. Table: rfq_submissions (Form Permintaan Penawaran Harga RFQ dari Calon Klien)
+CREATE TABLE IF NOT EXISTS public.rfq_submissions (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    rfq_number TEXT UNIQUE NOT NULL,
+    company_name TEXT NOT NULL,
+    pic_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    industry TEXT,
+    material TEXT,
+    tolerance TEXT,
+    target_timeline TEXT,
+    estimated_qty TEXT,
+    drawing_link TEXT,
+    notes TEXT,
+    items JSONB DEFAULT '[]'::jsonb,
+    status TEXT DEFAULT 'pending', -- 'pending', 'under_review', 'quoted', 'converted_to_project', 'rejected'
+    source TEXT DEFAULT 'web_portal',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_rfq_number ON public.rfq_submissions(rfq_number);
+CREATE INDEX IF NOT EXISTS idx_rfq_created_at ON public.rfq_submissions(created_at DESC);
+
 -- ROW LEVEL SECURITY (RLS) POLICIES
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.machines ENABLE ROW LEVEL SECURITY;
@@ -239,6 +267,7 @@ ALTER TABLE public.manufacturing_workflows ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.home_capabilities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.clients_and_partners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.company_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rfq_submissions ENABLE ROW LEVEL SECURITY;
 
 -- Izinkan publik (Anon key) membaca data (SELECT) untuk website
 CREATE POLICY "Public Read Categories" ON public.categories FOR SELECT USING (true);
@@ -250,6 +279,9 @@ CREATE POLICY "Public Read Home Capabilities" ON public.home_capabilities FOR SE
 CREATE POLICY "Public Read Clients and Partners" ON public.clients_and_partners FOR SELECT USING (true);
 CREATE POLICY "Public Read Company Settings" ON public.company_settings FOR SELECT USING (true);
 
+-- Izinkan publik anonim / klien submit (INSERT) formulir RFQ
+CREATE POLICY "Public Can Submit RFQ" ON public.rfq_submissions FOR INSERT TO anon, authenticated WITH CHECK (true);
+
 -- Izinkan Admin / Service Role akses penuh
 CREATE POLICY "Admin Full Access Categories" ON public.categories FOR ALL USING (auth.role() = 'service_role' OR auth.role() = 'authenticated');
 CREATE POLICY "Admin Full Access Machines" ON public.machines FOR ALL USING (auth.role() = 'service_role' OR auth.role() = 'authenticated');
@@ -259,6 +291,7 @@ CREATE POLICY "Admin Full Access Workflows" ON public.manufacturing_workflows FO
 CREATE POLICY "Admin Full Access Home Capabilities" ON public.home_capabilities FOR ALL USING (auth.role() = 'service_role' OR auth.role() = 'authenticated');
 CREATE POLICY "Admin Full Access Clients" ON public.clients_and_partners FOR ALL USING (auth.role() = 'service_role' OR auth.role() = 'authenticated');
 CREATE POLICY "Admin Full Access Settings" ON public.company_settings FOR ALL USING (auth.role() = 'service_role' OR auth.role() = 'authenticated');
+CREATE POLICY "Admin Full Access RFQ Submissions" ON public.rfq_submissions FOR ALL USING (auth.role() = 'service_role' OR auth.role() = 'authenticated');
 
 -- SEED DATA AWAL LENGKAP
 INSERT INTO public.categories (id, name_id, name_en, icon_name, description_id, description_en, display_order)
@@ -419,10 +452,10 @@ ON CONFLICT (id) DO NOTHING;
 
       {/* TAB 1: Content Mapping Detail */}
       {activeTab === 'content-mapping' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* 1. Halaman Beranda (Home) */}
           <div
-            className={`p-6 rounded-3xl border space-y-4 ${
+            className={`p-5 rounded-3xl border space-y-4 ${
               isDark ? 'bg-[#0f141f] border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
             }`}
           >
@@ -562,6 +595,55 @@ ON CONFLICT (id) DO NOTHING;
                 </p>
                 <p className="text-[11px]">
                   Tahapan 01 Engineering 3D CAD/CAM s/d 05 Tryout &amp; CMM Inspection berstandar ISO 9001:2015.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Form RFQ & Dokumen Penawaran */}
+          <div
+            className={`p-5 rounded-3xl border space-y-4 ${
+              isDark ? 'bg-[#0f141f] border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
+            }`}
+          >
+            <div className="flex items-center gap-2.5 pb-3 border-b border-inherit">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
+                <FileText className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-sm font-black font-display text-slate-100">4. Form &amp; Dokumen RFQ</h4>
+                <span className="text-[10px] font-mono text-neutral-400">Permintaan Penawaran Klien</span>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs leading-relaxed text-neutral-300">
+              <div className="p-3 rounded-2xl bg-neutral-900/60 border border-neutral-800/80 space-y-1">
+                <span className="font-bold text-emerald-400 block">Pengajuan RFQ &amp; PIC</span>
+                <p className="text-[11px] text-neutral-400">
+                  Tabel: <code className="text-emerald-400 font-mono">rfq_submissions</code>
+                </p>
+                <p className="text-[11px]">
+                  Perusahaan, PIC, email, telp/WA, material, toleransi presisi, timeline, link drawing CAD.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-neutral-900/60 border border-neutral-800/80 space-y-1">
+                <span className="font-bold text-emerald-400 block">Daftar Item &amp; Kuantiti</span>
+                <p className="text-[11px] text-neutral-400">
+                  Kolom: <code className="text-emerald-400 font-mono">items (JSONB), status</code>
+                </p>
+                <p className="text-[11px]">
+                  Rincian item mesin &amp; kuantiti yang dipilih di cart serta status antrean estimasi ('pending', 'quoted').
+                </p>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-neutral-900/60 border border-neutral-800/80 space-y-1">
+                <span className="font-bold text-emerald-400 block">Integrasi Pihak Ketiga</span>
+                <p className="text-[11px] text-neutral-400">
+                  Channel: <code className="text-emerald-400 font-mono">WhatsApp WA.me &amp; Print PDF</code>
+                </p>
+                <p className="text-[11px]">
+                  Generate surat resmi RFQ cetak A4 dan otomatis forward via WhatsApp Sales PTT instan.
                 </p>
               </div>
             </div>

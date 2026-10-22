@@ -146,6 +146,31 @@ CREATE TABLE IF NOT EXISTS public.company_settings (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- I. Table: rfq_submissions (Form Permintaan Penawaran Harga RFQ dari Calon Klien)
+CREATE TABLE IF NOT EXISTS public.rfq_submissions (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    rfq_number TEXT UNIQUE NOT NULL,
+    company_name TEXT NOT NULL,
+    pic_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    industry TEXT,
+    material TEXT,
+    tolerance TEXT,
+    target_timeline TEXT,
+    estimated_qty TEXT,
+    drawing_link TEXT,
+    notes TEXT,
+    items JSONB DEFAULT '[]'::jsonb,
+    status TEXT DEFAULT 'pending', -- 'pending', 'under_review', 'quoted', 'converted_to_project', 'rejected'
+    source TEXT DEFAULT 'web_portal',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_rfq_number ON public.rfq_submissions(rfq_number);
+CREATE INDEX IF NOT EXISTS idx_rfq_created_at ON public.rfq_submissions(created_at DESC);
+
 -- ==============================================================================
 -- 3. ROW LEVEL SECURITY (RLS) POLICIES
 -- ==============================================================================
@@ -157,6 +182,7 @@ ALTER TABLE public.manufacturing_workflows ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.home_capabilities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.clients_and_partners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.company_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rfq_submissions ENABLE ROW LEVEL SECURITY;
 
 -- Izinkan publik (Anon key) membaca data (SELECT) untuk kebutuhan website
 DROP POLICY IF EXISTS "Public Read Categories" ON public.categories;
@@ -207,6 +233,14 @@ CREATE POLICY "Admin Full Access Clients" ON public.clients_and_partners FOR ALL
 
 DROP POLICY IF EXISTS "Admin Full Access Settings" ON public.company_settings;
 CREATE POLICY "Admin Full Access Settings" ON public.company_settings FOR ALL USING (auth.role() = 'service_role' OR auth.role() = 'authenticated');
+
+-- Izinkan publik anonim / klien submit (INSERT) formulir RFQ
+DROP POLICY IF EXISTS "Public Can Submit RFQ" ON public.rfq_submissions;
+CREATE POLICY "Public Can Submit RFQ" ON public.rfq_submissions FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+-- Izinkan Administrator & Staff internal melihat & memproses RFQ submissions
+DROP POLICY IF EXISTS "Admin Full Access RFQ Submissions" ON public.rfq_submissions;
+CREATE POLICY "Admin Full Access RFQ Submissions" ON public.rfq_submissions FOR ALL USING (auth.role() = 'service_role' OR auth.role() = 'authenticated');
 
 -- ==============================================================================
 -- 4. SEED DATA LENGKAP (PT. PRIMA TEKNIK TRADA)
