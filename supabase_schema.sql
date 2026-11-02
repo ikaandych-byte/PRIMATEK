@@ -171,6 +171,14 @@ CREATE TABLE IF NOT EXISTS public.rfq_submissions (
 CREATE INDEX IF NOT EXISTS idx_rfq_number ON public.rfq_submissions(rfq_number);
 CREATE INDEX IF NOT EXISTS idx_rfq_created_at ON public.rfq_submissions(created_at DESC);
 
+-- J. Table & RPC: keep_alive_heartbeat (Mencegah Auto-Pause / "Low Activity" Supabase Free Tier)
+CREATE TABLE IF NOT EXISTS public.keep_alive_heartbeat (
+    id INT PRIMARY KEY DEFAULT 1,
+    last_pinged_at TIMESTAMPTZ DEFAULT NOW(),
+    ping_count BIGINT DEFAULT 1,
+    source TEXT DEFAULT 'github-actions'
+);
+
 -- ==============================================================================
 -- 3. ROW LEVEL SECURITY (RLS) POLICIES
 -- ==============================================================================
@@ -183,6 +191,7 @@ ALTER TABLE public.home_capabilities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.clients_and_partners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.company_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rfq_submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.keep_alive_heartbeat ENABLE ROW LEVEL SECURITY;
 
 -- Izinkan publik (Anon key) membaca data (SELECT) untuk kebutuhan website
 DROP POLICY IF EXISTS "Public Read Categories" ON public.categories;
@@ -241,6 +250,44 @@ CREATE POLICY "Public Can Submit RFQ" ON public.rfq_submissions FOR INSERT TO an
 -- Izinkan Administrator & Staff internal melihat & memproses RFQ submissions
 DROP POLICY IF EXISTS "Admin Full Access RFQ Submissions" ON public.rfq_submissions;
 CREATE POLICY "Admin Full Access RFQ Submissions" ON public.rfq_submissions FOR ALL USING (auth.role() = 'service_role' OR auth.role() = 'authenticated');
+
+-- Izinkan Heartbeat hanya pada baris tunggal id = 1 (aman dari spam baris baru)
+DROP POLICY IF EXISTS "Public Heartbeat Access" ON public.keep_alive_heartbeat;
+CREATE POLICY "Public Heartbeat Access" ON public.keep_alive_heartbeat
+    FOR ALL TO anon, authenticated
+    USING (id = 1)
+    WITH CHECK (id = 1);
+
+INSERT INTO public.keep_alive_heartbeat (id, last_pinged_at, ping_count, source)
+VALUES (1, NOW(), 1, 'initial-seed')
+ON CONFLICT (id) DO UPDATE SET last_pinged_at = NOW();
+
+-- RPC Function untuk mencatat transaksi WRITE nyata di PostgreSQL WAL setiap kali di-ping
+CREATE OR REPLACE FUNCTION public.ping_keep_alive(ping_source TEXT DEFAULT 'github-actions')
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    new_count BIGINT;
+BEGIN
+    INSERT INTO public.keep_alive_heartbeat (id, last_pinged_at, ping_count, source)
+    VALUES (1, NOW(), 1, ping_source)
+    ON CONFLICT (id) DO UPDATE
+    SET last_pinged_at = NOW(),
+        ping_count = public.keep_alive_heartbeat.ping_count + 1,
+        source = EXCLUDED.source
+    RETURNING ping_count INTO new_count;
+
+    RETURN jsonb_build_object(
+        'ok', true,
+        'ping_count', new_count,
+        'timestamp', NOW()
+    );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.ping_keep_alive(TEXT) TO anon, authenticated;
 
 -- ==============================================================================
 -- 4. SEED DATA LENGKAP (PT. PRIMA TEKNIK TRADA)

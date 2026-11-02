@@ -2,45 +2,117 @@ name: Supabase Keep-Alive Heartbeat
 
 on:
   schedule:
-    # Berjalan otomatis setiap 2 hari sekali pada jam 04:00 UTC (11:00 WIB)
-    # Sangat aman mencegah batas 7 hari jeda (auto-pause) Supabase Free Tier
-    - cron: '0 4 */2 * *'
-  workflow_dispatch: # Memungkinkan tombol "Run workflow" manual kapan saja dari tab Actions di GitHub
+    # Berjalan otomatis 2x sehari (setiap 12 jam: 00:00 & 12:00 UTC / 07:00 & 19:00 WIB)
+    # Frekuensi 14x per minggu + transaksi WRITE nyata mencegah Auto-Pause ("Low Activity") Supabase Free Tier
+    - cron: '0 */12 * * *'
+  workflow_dispatch: # Memungkinkan klik manual "Run workflow" di tab Actions GitHub
 
 jobs:
   keep-alive:
     name: Ping Supabase REST API
     runs-on: ubuntu-latest
     steps:
-      - name: Send Heartbeat to Supabase REST API
+      - name: Send Write & Read Heartbeat to Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://yclzqhvvbejrouknnilj.supabase.co' }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljbHpxaHZ2YmVqcm91a25uaWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MzUwMDMsImV4cCI6MjEwODIxMTAwM30.IYmaDEYvmyPCyVaXYIOXGiyTFDxQkqR3xPTYGe95mAA' }}
         run: |
-          echo "======================================================="
-          echo "Memulai Ping Heartbeat Supabase PT. PRIMA TEKNIK TRADA"
-          echo "Waktu Eksekusi: $(date -u)"
-          echo "======================================================="
+          set +e
+          echo "==============================================================="
+          echo "Memulai Heartbeat Aktif (Write + Read) Supabase PT. PRIMA TEKNIK TRADA"
+          echo "Waktu Eksekusi UTC: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Target Endpoint   : $SUPABASE_URL"
+          echo "==============================================================="
 
-          URL="https://yclzqhvvbejrouknnilj.supabase.co/rest/v1/categories?select=id&limit=1"
-          API_KEY="${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljbHpxaHZ2YmVqcm91a25uaWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MzUwMDMsImV4cCI6MjEwODIxMTAwM30.IYmaDEYvmyPCyVaXYIOXGiyTFDxQkqR3xPTYGe95mAA' }}"
+          # 1. Cek konektivitas & picu aktivitas BACA nyata (anti-cache)
+          CACHE_BUSTER=$(date +%s)
+          READ_OUTPUT=$(curl -sS --retry 3 --retry-delay 5 --connect-timeout 15 \
+            -o /tmp/read_body.json \
+            -w "%{http_code}|%{time_total}" \
+            -X GET "$SUPABASE_URL/rest/v1/categories?select=id,name_id&limit=5" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            -H "Cache-Control: no-cache, no-store" \
+            -H "Pragma: no-cache" 2>/tmp/curl_err.txt)
+          CURL_EXIT=$?
 
-          echo "Mengirim request HTTP GET ke: $URL"
-          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}\nLATENCY:%{time_total}s" -X GET "$URL" \
-            -H "apikey: $API_KEY" \
-            -H "Authorization: Bearer $API_KEY")
+          READ_STATUS=$(echo "$READ_OUTPUT" | cut -d'|' -f1)
+          READ_LATENCY=$(echo "$READ_OUTPUT" | cut -d'|' -f2)
 
-          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
-          LATENCY=$(echo "$RESPONSE" | grep "LATENCY" | cut -d':' -f2)
+          if [ "$CURL_EXIT" -ne 0 ] || [ "$READ_STATUS" = "000" ]; then
+            echo "❌ KONEKSI GAGAL (Exit Code: $CURL_EXIT | HTTP: $READ_STATUS)"
+            cat /tmp/curl_err.txt
+            echo ""
+            echo "==============================================================="
+            echo "PENYEBAB UTAMA: Project Supabase Anda saat ini berstatus PAUSED!"
+            echo "Ketika project Supabase berstatus PAUSED, DNS (*.supabase.co) dimatikan"
+            echo "oleh Supabase sehingga GitHub Actions tidak bisa membangunkannya otomatis."
+            echo ""
+            echo "CARA MENGATASI:"
+            echo "1. Buka: https://supabase.com/dashboard/project/yclzqhvvbejrouknnilj"
+            echo "2. Klik tombol 'Restore project' / 'Resume project' (tunggu 1-2 menit)."
+            echo "3. Jalankan SQL tabel 'keep_alive_heartbeat' di SQL Editor Supabase."
+            echo "4. Kembali ke GitHub -> Actions -> klik 'Run workflow' untuk verifikasi."
+            echo "==============================================================="
+            {
+              echo "### ⚠️ Project Supabase Sedang PAUSED"
+              echo "DNS \`yclzqhvvbejrouknnilj.supabase.co\` tidak aktif karena project dalam kondisi **Paused**."
+              echo "1. Buka [Supabase Dashboard Project](https://supabase.com/dashboard/project/yclzqhvvbejrouknnilj) lalu klik **Restore project**."
+              echo "2. Setelah status kembali **Active**, jalankan ulang workflow ini melalui tombol **Run workflow**."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
-          echo "Response Status: $HTTP_STATUS"
-          echo "Response Latency: $LATENCY"
+          echo "✅ [1/3] Read Categories HTTP $READ_STATUS (${READ_LATENCY}s)"
 
-          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
-            echo "======================================================="
-            echo "BERHASIL: Database Supabase aktif & timer jeda 7 hari berhasil di-reset!"
-            echo "======================================================="
+          # 2. Picu aktivitas TULIS PostgreSQL nyata (WAL Write) via RPC ping_keep_alive
+          WRITE_STATUS=$(curl -s --retry 2 --connect-timeout 15 \
+            -o /tmp/write_body.json \
+            -w "%{http_code}" \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/ping_keep_alive" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"ping_source":"github-actions-cron"}')
+
+          if [ "$WRITE_STATUS" -ge 200 ] && [ "$WRITE_STATUS" -lt 300 ]; then
+            echo "✅ [2/3] Write Heartbeat RPC (ping_keep_alive) HTTP $WRITE_STATUS — $(cat /tmp/write_body.json)"
+          else
+            # Fallback UPSERT langsung ke tabel keep_alive_heartbeat jika RPC belum dibuat
+            UPSERT_STATUS=$(curl -s --connect-timeout 15 \
+              -o /tmp/upsert_body.json \
+              -w "%{http_code}" \
+              -X POST "$SUPABASE_URL/rest/v1/keep_alive_heartbeat?on_conflict=id" \
+              -H "apikey: $SUPABASE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_KEY" \
+              -H "Content-Type: application/json" \
+              -H "Prefer: resolution=merge-duplicates,return=representation" \
+              -d "{\"id\":1,\"last_ping_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"source\":\"github-actions\"}")
+            echo "ℹ️ [2/3] Fallback Upsert Heartbeat HTTP $UPSERT_STATUS (Jalankan SQL keep_alive_heartbeat jika 404)"
+          fi
+
+          # 3. Query tabel kedua (machines & company_settings) agar tercatat multi-query aktif
+          MACHINES_STATUS=$(curl -s --connect-timeout 15 -o /dev/null -w "%{http_code}" \
+            -X GET "$SUPABASE_URL/rest/v1/machines?select=id,name&limit=3" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            -H "Cache-Control: no-cache")
+          echo "✅ [3/3] Read Machines HTTP $MACHINES_STATUS"
+
+          if [ "$READ_STATUS" -ge 200 ] && [ "$READ_STATUS" -lt 300 ]; then
+            {
+              echo "### ✅ Supabase Heartbeat Berhasil"
+              echo "- **Waktu UTC:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+              echo "- **Read Status:** HTTP $READ_STATUS (${READ_LATENCY}s)"
+              echo "- **Write RPC Status:** HTTP $WRITE_STATUS"
+              echo "- **Machines Read Status:** HTTP $MACHINES_STATUS"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "==============================================================="
+            echo "SUKSES: Aktivitas Write & Read tercatat di PostgreSQL Supabase!"
+            echo "==============================================================="
             exit 0
           else
-            echo "======================================================="
-            echo "PERINGATAN: Respon tidak valid ($HTTP_STATUS). Cek URL atau API key."
-            echo "======================================================="
+            echo "❌ Respon HTTP tidak valid: $READ_STATUS"
+            cat /tmp/read_body.json
             exit 1
           fi

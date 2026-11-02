@@ -32,9 +32,17 @@ export const DatabaseSupabaseSection: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [copiedPingUrl, setCopiedPingUrl] = useState(false);
   const [copiedPingHeader, setCopiedPingHeader] = useState(false);
+  const [copiedKeepAliveSql, setCopiedKeepAliveSql] = useState(false);
+  const [copiedWorkflowYaml, setCopiedWorkflowYaml] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [isProjectPaused, setIsProjectPaused] = useState(false);
   const [pinging, setPinging] = useState(false);
-  const [pingResult, setPingResult] = useState<{ success: boolean; latency: number; timestamp: string } | null>(null);
+  const [pingResult, setPingResult] = useState<{
+    success: boolean;
+    latency: number;
+    timestamp: string;
+    detail?: string;
+  } | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'content-mapping' | 'sql-ddl' | 'keep-alive'>('content-mapping');
 
@@ -42,15 +50,54 @@ export const DatabaseSupabaseSection: React.FC = () => {
     setPinging(true);
     const start = performance.now();
     try {
-      const { data, error } = await supabase.from('categories').select('id').limit(1);
+      const { data: rpcData, error: rpcError } = await supabase.rpc('ping_keep_alive', {
+        ping_source: 'admin-dashboard-manual',
+      });
       const latency = Math.round(performance.now() - start);
-      if (error) {
-        setPingResult({ success: false, latency, timestamp: new Date().toLocaleTimeString('id-ID') });
-      } else {
-        setPingResult({ success: true, latency, timestamp: new Date().toLocaleTimeString('id-ID') });
+      if (!rpcError) {
+        setIsProjectPaused(false);
+        setPingResult({
+          success: true,
+          latency,
+          timestamp: new Date().toLocaleTimeString('id-ID'),
+          detail: `Write RPC ping_keep_alive sukses (Total Ping: ${rpcData?.ping_count ?? 'OK'})`,
+        });
+        return;
       }
-    } catch (err) {
-      setPingResult({ success: false, latency: 0, timestamp: new Date().toLocaleTimeString('id-ID') });
+
+      const { error } = await supabase.from('categories').select('id').limit(1);
+      if (error) {
+        const msg = error.message || '';
+        const paused =
+          msg.toLowerCase().includes('failed to fetch') ||
+          msg.toLowerCase().includes('network') ||
+          msg.toLowerCase().includes('load failed');
+        if (paused) setIsProjectPaused(true);
+        setPingResult({
+          success: false,
+          latency,
+          timestamp: new Date().toLocaleTimeString('id-ID'),
+          detail: paused
+            ? 'Project Supabase sedang PAUSED (DNS tidak dapat diakses). Klik Restore Project di Dashboard Supabase.'
+            : msg,
+        });
+      } else {
+        setIsProjectPaused(false);
+        setPingResult({
+          success: true,
+          latency,
+          timestamp: new Date().toLocaleTimeString('id-ID'),
+          detail: 'Read tabel categories sukses (Jalankan SQL keep_alive_heartbeat untuk mengaktifkan Write RPC)',
+        });
+      }
+    } catch (err: any) {
+      setIsProjectPaused(true);
+      setPingResult({
+        success: false,
+        latency: 0,
+        timestamp: new Date().toLocaleTimeString('id-ID'),
+        detail: 'Project Supabase sedang PAUSED (DNS tidak aktif). Silakan klik Restore Project di Dashboard Supabase.',
+      });
     } finally {
       setPinging(false);
     }
@@ -68,6 +115,7 @@ export const DatabaseSupabaseSection: React.FC = () => {
     clients_and_partners: { exists: false, count: 0, checking: false },
     company_settings: { exists: false, count: 0, checking: false },
     rfq_submissions: { exists: false, count: 0, checking: false },
+    keep_alive_heartbeat: { exists: false, count: 0, checking: false },
   });
 
   const checkTables = async () => {
@@ -84,22 +132,29 @@ export const DatabaseSupabaseSection: React.FC = () => {
       'clients_and_partners',
       'company_settings',
       'rfq_submissions',
+      'keep_alive_heartbeat',
     ];
 
     const newStatus: any = {};
+    let networkFailures = 0;
 
     for (const tbl of tables) {
       try {
-        const { data, count, error } = await supabase
+        const { count, error } = await supabase
           .from(tbl)
           .select('*', { count: 'exact', head: true });
 
         if (error) {
+          const msg = (error.message || '').toLowerCase();
+          if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('load failed')) {
+            networkFailures += 1;
+          }
           newStatus[tbl] = { exists: false, count: 0, checking: false };
         } else {
           newStatus[tbl] = { exists: true, count: count || 0, checking: false };
         }
       } catch (err) {
+        networkFailures += 1;
         newStatus[tbl] = { exists: false, count: 0, checking: false };
       }
     }
@@ -107,10 +162,19 @@ export const DatabaseSupabaseSection: React.FC = () => {
     setTableStatus(newStatus);
     setTesting(false);
     const availableCount = Object.values(newStatus).filter((s: any) => s.exists).length;
-    if (availableCount === 0) {
-      setStatusMessage('Koneksi endpoint aktif. Tabel di database Supabase belum dibuat, jalankan SQL query di bawah pada SQL Editor Supabase.');
+    if (networkFailures >= tables.length) {
+      setIsProjectPaused(true);
+      setStatusMessage(
+        'PERINGATAN: Project Supabase saat ini berstatus PAUSED (DNS yclzqhvvbejrouknnilj.supabase.co tidak aktif). Klik "Restore Project di Supabase" terlebih dahulu.'
+      );
+    } else if (availableCount === 0) {
+      setIsProjectPaused(false);
+      setStatusMessage(
+        'Koneksi endpoint aktif. Tabel di database Supabase belum dibuat, jalankan SQL query di bawah pada SQL Editor Supabase.'
+      );
     } else {
-      setStatusMessage(`Berhasil terhubung! ${availableCount} dari ${tables.length} tabel terdeteksi di Supabase.`);
+      setIsProjectPaused(false);
+      setStatusMessage(`Berhasil terhubung! ${availableCount} dari ${tables.length} tabel aktif di Supabase.`);
     }
   };
 
@@ -349,14 +413,145 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 `;
 
+  const KEEPALIVE_SQL_PATCH = `-- ==============================================================================
+-- SQL ANTI-PAUSE SUPABASE (WRITE HEARTBEAT TABLE + RPC)
+-- Jalankan 1x di Supabase SQL Editor setelah klik "Restore Project"
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.keep_alive_heartbeat (
+    id INT PRIMARY KEY DEFAULT 1,
+    last_pinged_at TIMESTAMPTZ DEFAULT NOW(),
+    ping_count BIGINT DEFAULT 1,
+    source TEXT DEFAULT 'github-actions'
+);
+
+ALTER TABLE public.keep_alive_heartbeat ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public Heartbeat Access" ON public.keep_alive_heartbeat;
+CREATE POLICY "Public Heartbeat Access" ON public.keep_alive_heartbeat
+    FOR ALL TO anon, authenticated
+    USING (id = 1)
+    WITH CHECK (id = 1);
+
+INSERT INTO public.keep_alive_heartbeat (id, last_pinged_at, ping_count, source)
+VALUES (1, NOW(), 1, 'initial-seed')
+ON CONFLICT (id) DO UPDATE SET last_pinged_at = NOW();
+
+CREATE OR REPLACE FUNCTION public.ping_keep_alive(ping_source TEXT DEFAULT 'github-actions')
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    new_count BIGINT;
+BEGIN
+    INSERT INTO public.keep_alive_heartbeat (id, last_pinged_at, ping_count, source)
+    VALUES (1, NOW(), 1, ping_source)
+    ON CONFLICT (id) DO UPDATE
+    SET last_pinged_at = NOW(),
+        ping_count = public.keep_alive_heartbeat.ping_count + 1,
+        source = EXCLUDED.source
+    RETURNING ping_count INTO new_count;
+
+    RETURN jsonb_build_object('ok', true, 'ping_count', new_count, 'timestamp', NOW());
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.ping_keep_alive(TEXT) TO anon, authenticated;`;
+
+  const GITHUB_WORKFLOW_YAML = `name: Supabase Keep-Alive Heartbeat
+
+on:
+  schedule:
+    # Berjalan otomatis 2x sehari (setiap 12 jam: 00:00 & 12:00 UTC)
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    name: Ping Supabase REST API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Write & Read Heartbeat to Supabase
+        env:
+          SUPABASE_URL: \${{ secrets.SUPABASE_URL || '${SUPABASE_URL}' }}
+          SUPABASE_KEY: \${{ secrets.SUPABASE_ANON_KEY || '${SUPABASE_ANON_KEY}' }}
+        run: |
+          set +e
+          READ_OUTPUT=$(curl -sS --retry 3 --retry-delay 5 --connect-timeout 15 \\
+            -o /tmp/read_body.json -w "%{http_code}|%{time_total}" \\
+            -X GET "$SUPABASE_URL/rest/v1/categories?select=id,name_id&limit=5" \\
+            -H "apikey: $SUPABASE_KEY" \\
+            -H "Authorization: Bearer $SUPABASE_KEY" \\
+            -H "Cache-Control: no-cache, no-store" 2>/tmp/curl_err.txt)
+          CURL_EXIT=$?
+          READ_STATUS=$(echo "$READ_OUTPUT" | cut -d'|' -f1)
+
+          if [ "$CURL_EXIT" -ne 0 ] || [ "$READ_STATUS" = "000" ]; then
+            echo "Project Supabase sedang PAUSED! Buka Dashboard Supabase -> klik Restore Project."
+            cat /tmp/curl_err.txt
+            exit 1
+          fi
+
+          WRITE_STATUS=$(curl -s --retry 2 --connect-timeout 15 -o /tmp/write_body.json -w "%{http_code}" \\
+            -X POST "$SUPABASE_URL/rest/v1/rpc/ping_keep_alive" \\
+            -H "apikey: $SUPABASE_KEY" \\
+            -H "Authorization: Bearer $SUPABASE_KEY" \\
+            -H "Content-Type: application/json" \\
+            -d '{"ping_source":"github-actions-cron"}')
+
+          echo "Read HTTP: $READ_STATUS | Write RPC HTTP: $WRITE_STATUS"
+          [ "$READ_STATUS" -ge 200 ] && [ "$READ_STATUS" -lt 300 ] && exit 0 || exit 1`;
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(FULL_SQL_SCRIPT);
+    navigator.clipboard.writeText(`${FULL_SQL_SCRIPT}\n\n${KEEPALIVE_SQL_PATCH}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Alert Khusus Jika Project Terdeteksi PAUSED */}
+      {isProjectPaused && (
+        <div
+          className={`p-5 rounded-3xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+            isDark
+              ? 'bg-rose-950/35 border-rose-500/50 text-rose-200'
+              : 'bg-rose-50 border-rose-300 text-rose-900'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-rose-400 shrink-0 mt-0.5" />
+            <div className="space-y-1 text-xs">
+              <div className="font-black text-sm text-rose-300">
+                Project Supabase Saat Ini Berstatus PAUSED (Penyebab GitHub Actions Failed!)
+              </div>
+              <p className="leading-relaxed opacity-90">
+                Saat project Supabase masuk mode <strong>Paused</strong>, DNS <code>yclzqhvvbejrouknnilj.supabase.co</code> dimatikan oleh Supabase sehingga GitHub Actions gagal dalam 2 detik (<em>All jobs have failed</em>). Script otomatis tidak bisa membangunkan project yang sudah terlanjur tidur — Anda wajib klik <strong>Restore project</strong> 1x secara manual, lalu jalankan patch SQL Write Heartbeat di tab <strong>Solusi Anti-Pause</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="https://supabase.com/dashboard/project/yclzqhvvbejrouknnilj"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-black flex items-center gap-2 shadow-lg shadow-rose-500/20 cursor-pointer"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>1. Buka &amp; Restore Project</span>
+            </a>
+            <button
+              type="button"
+              onClick={() => setActiveTab('keep-alive')}
+              className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 text-xs font-black cursor-pointer"
+            >
+              2. Lihat Langkah Perbaikan
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Banner & Supabase Connection Status */}
       <div
         className={`p-6 rounded-3xl border ${
@@ -368,8 +563,14 @@ ON CONFLICT (id) DO NOTHING;
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">
-                Supabase PostgreSQL Connected
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${
+                  isProjectPaused
+                    ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                    : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                }`}
+              >
+                {isProjectPaused ? 'Supabase Project Paused' : 'Supabase PostgreSQL Connected'}
               </span>
               <span className="text-xs text-neutral-400 font-mono">
                 Project ID: yclzqhvvbejrouknnilj
@@ -384,7 +585,7 @@ ON CONFLICT (id) DO NOTHING;
               <code className="text-emerald-400 font-mono text-[11px] bg-black/40 px-1.5 py-0.5 rounded">
                 {SUPABASE_URL}
               </code>
-              . Frontend telah dilengkapi fallback cerdas sehingga website tetap tampil mulus baik saat offline maupun setelah tabel Supabase diisi.
+              . Frontend telah dilengkapi fallback cerdas sehingga website tetap tampil mulus baik saat offline maupun setelah tabel Supabase aktif.
             </p>
           </div>
 
@@ -399,20 +600,30 @@ ON CONFLICT (id) DO NOTHING;
             </button>
 
             <a
-              href="https://supabase.com/dashboard/project/yclzqhvvbejrouknnilj/sql"
+              href="https://supabase.com/dashboard/project/yclzqhvvbejrouknnilj"
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-500/20"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              <span>Buka SQL Editor Supabase</span>
+              <span>Buka Dashboard Supabase</span>
             </a>
           </div>
         </div>
 
         {statusMessage && (
-          <div className="mt-4 pt-3 border-t border-emerald-500/20 flex items-center gap-2 text-xs font-mono text-emerald-300">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div
+            className={`mt-4 pt-3 border-t flex items-center gap-2 text-xs font-mono ${
+              isProjectPaused
+                ? 'border-rose-500/30 text-rose-300'
+                : 'border-emerald-500/20 text-emerald-300'
+            }`}
+          >
+            {isProjectPaused ? (
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            )}
             <span>{statusMessage}</span>
           </div>
         )}
@@ -783,13 +994,118 @@ ON CONFLICT (id) DO NOTHING;
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                  {pingResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                  )}
                   <span>
-                    <strong>Respon Sukses 200 OK</strong> — Latency: {pingResult.latency} ms (Waktu: {pingResult.timestamp}). Timer jeda Supabase berhasil di-reset!
+                    {pingResult.success ? (
+                      <>
+                        <strong>Respon Sukses 200 OK</strong> — {pingResult.detail} (Latency: {pingResult.latency} ms | {pingResult.timestamp})
+                      </>
+                    ) : (
+                      <>
+                        <strong>Ping Gagal</strong> — {pingResult.detail} ({pingResult.timestamp})
+                      </>
+                    )}
                   </span>
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Panduan Perbaikan Tuntas 4 Langkah (Unpause + Write Heartbeat + GitHub Actions v2) */}
+          <div
+            className={`p-6 rounded-3xl border space-y-5 ${
+              isDark ? 'bg-[#0f141f] border-purple-500/40' : 'bg-white border-purple-300 shadow-sm'
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-inherit">
+              <div>
+                <span className="text-[10px] font-mono uppercase font-bold text-purple-400">
+                  Panduan Mengatasi Error Email &quot;All jobs have failed&quot; &amp; Project Paused
+                </span>
+                <h4 className="text-base font-black font-display text-slate-100 mt-0.5">
+                  4 Langkah Agar GitHub Actions Hijau Kembali &amp; Supabase Tidak Pernah Paused Lagi
+                </h4>
+              </div>
+              <a
+                href="https://github.com/ikaandych-byte/PRIMATEK/actions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 rounded-xl border border-purple-500/40 bg-purple-500/15 hover:bg-purple-500 text-purple-300 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-colors self-start"
+              >
+                <span>Buka GitHub Actions PRIMATEK</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {/* Kolom Kiri: SQL Patch Write Heartbeat */}
+              <div className="space-y-3">
+                <div className="text-xs text-neutral-300 space-y-1">
+                  <div className="font-bold text-emerald-400">
+                    Langkah 1 &amp; 2: Restore Project di Supabase + Jalankan SQL Write Heartbeat
+                  </div>
+                  <p className="text-[11px] text-neutral-400 leading-relaxed">
+                    Mengapa kemarin masih terkena <em>Paused</em>? Karena request <code>GET</code> (baca saja) setiap 2 hari terdeteksi sebagai <em>Low Activity</em> oleh Supabase. Fungsi RPC <code>ping_keep_alive</code> di bawah mencatat <strong>transaksi TULIS (UPDATE) nyata ke PostgreSQL</strong> pada 1 baris saja tanpa memenuhi kapasitas database.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-neutral-400">SQL Patch (Jalankan di SQL Editor):</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(KEEPALIVE_SQL_PATCH);
+                      setCopiedKeepAliveSql(true);
+                      setTimeout(() => setCopiedKeepAliveSql(false), 2500);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {copiedKeepAliveSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedKeepAliveSql ? 'SQL Tersalin!' : 'Salin SQL Heartbeat'}</span>
+                  </button>
+                </div>
+
+                <pre className="p-3.5 rounded-2xl bg-black/80 text-emerald-400 text-[11px] font-mono overflow-x-auto max-h-60 border border-neutral-800 leading-relaxed">
+                  <code>{KEEPALIVE_SQL_PATCH}</code>
+                </pre>
+              </div>
+
+              {/* Kolom Kanan: GitHub Actions YAML v2 */}
+              <div className="space-y-3">
+                <div className="text-xs text-neutral-300 space-y-1">
+                  <div className="font-bold text-purple-400">
+                    Langkah 3 &amp; 4: Update File Workflow GitHub Actions (Setiap 12 Jam + Write RPC)
+                  </div>
+                  <p className="text-[11px] text-neutral-400 leading-relaxed">
+                    File <code>.github/workflows/supabase-keepalive.yml</code> di proyek ini sudah diperbarui menjadi jadwal <strong>setiap 12 jam (2x sehari)</strong> dengan transaksi <code>POST /rpc/ping_keep_alive</code>. Push perubahan ke GitHub (atau salin isi di bawah ke repo <code>ikaandych-byte/PRIMATEK</code>), lalu klik <strong>Run workflow</strong>.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-neutral-400">.github/workflows/supabase-keepalive.yml:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(GITHUB_WORKFLOW_YAML);
+                      setCopiedWorkflowYaml(true);
+                      setTimeout(() => setCopiedWorkflowYaml(false), 2500);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-purple-500 hover:bg-purple-400 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {copiedWorkflowYaml ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedWorkflowYaml ? 'YAML Tersalin!' : 'Salin Workflow YAML'}</span>
+                  </button>
+                </div>
+
+                <pre className="p-3.5 rounded-2xl bg-black/80 text-purple-300 text-[11px] font-mono overflow-x-auto max-h-60 border border-neutral-800 leading-relaxed">
+                  <code>{GITHUB_WORKFLOW_YAML}</code>
+                </pre>
+              </div>
+            </div>
           </div>
 
           {/* 3 Strategi Anti-Pause Grid */}
@@ -807,7 +1123,7 @@ ON CONFLICT (id) DO NOTHING;
                   </div>
                   <div>
                     <span className="text-[10px] font-mono text-amber-400 uppercase font-bold">
-                      Metode 1 (Rekomendasi Utama)
+                      Metode Cadangan (Backup)
                     </span>
                     <h4 className="text-sm font-black font-display text-slate-100">
                       Cron-Job.org (Zero-Code)
@@ -816,19 +1132,17 @@ ON CONFLICT (id) DO NOTHING;
                 </div>
 
                 <p className="text-xs text-neutral-300 leading-relaxed">
-                  Layanan penjadwalan gratis selamanya dari Jerman. Cukup daftar dan masukkan URL endpoint REST Supabase agar dipanggil otomatis setiap 1–2 hari sekali.
+                  Bisa dipakai bersamaan dengan GitHub Actions sebagai cadangan berlapis (<em>double protection</em>), terutama jika repo GitHub tidak ada commit baru selama &gt;60 hari.
                 </p>
 
                 <div className="space-y-2 text-xs">
                   <div className="p-3 rounded-2xl bg-neutral-900/60 border border-neutral-800 space-y-1.5">
                     <div className="flex items-center justify-between text-[11px] font-mono">
-                      <span className="text-neutral-400">1. URL Target Ping:</span>
+                      <span className="text-neutral-400">1. URL Target Ping (POST RPC):</span>
                       <button
                         type="button"
                         onClick={() => {
-                          navigator.clipboard.writeText(
-                            `${SUPABASE_URL}/rest/v1/categories?select=id&limit=1`
-                          );
+                          navigator.clipboard.writeText(`${SUPABASE_URL}/rest/v1/rpc/ping_keep_alive`);
                           setCopiedPingUrl(true);
                           setTimeout(() => setCopiedPingUrl(false), 2000);
                         }}
@@ -839,7 +1153,7 @@ ON CONFLICT (id) DO NOTHING;
                       </button>
                     </div>
                     <code className="text-[10px] font-mono text-emerald-400 break-all block">
-                      {SUPABASE_URL}/rest/v1/categories?select=id&amp;limit=1
+                      {SUPABASE_URL}/rest/v1/rpc/ping_keep_alive
                     </code>
                   </div>
 
@@ -880,7 +1194,9 @@ ON CONFLICT (id) DO NOTHING;
             {/* Opsi 2: GitHub Actions Workflow */}
             <div
               className={`p-6 rounded-3xl border flex flex-col justify-between space-y-4 ${
-                isDark ? 'bg-gradient-to-b from-[#151226] to-[#0f141f] border-purple-500/40 ring-1 ring-purple-500/20' : 'bg-purple-50/50 border-purple-300 shadow-sm'
+                isDark
+                  ? 'bg-gradient-to-b from-[#151226] to-[#0f141f] border-purple-500/40 ring-1 ring-purple-500/20'
+                  : 'bg-purple-50/50 border-purple-300 shadow-sm'
               }`}
             >
               <div className="space-y-3">
@@ -891,34 +1207,34 @@ ON CONFLICT (id) DO NOTHING;
                   <div>
                     <span className="text-[10px] font-mono text-purple-400 uppercase font-bold flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-                      Metode Terpilih &amp; Terpasang
+                      Metode Terpilih (v2 Write + Read)
                     </span>
                     <h4 className="text-sm font-black font-display text-slate-100">
-                      GitHub Actions (Otomatis)
+                      GitHub Actions (Setiap 12 Jam)
                     </h4>
                   </div>
                 </div>
 
                 <p className="text-xs text-neutral-300 leading-relaxed">
-                  File workflow telah dibuat dan aktif di repository: <code className="text-purple-300">.github/workflows/supabase-keepalive.yml</code>.
+                  Diperbarui di <code className="text-purple-300">.github/workflows/supabase-keepalive.yml</code> menggunakan transaksi <strong>WRITE + READ</strong>.
                 </p>
 
                 <div className="p-3.5 rounded-2xl bg-neutral-900/60 border border-neutral-800 space-y-2 text-xs">
                   <div className="font-bold text-purple-400 font-mono text-[11px]">
-                    Jadwal Cron Otomatis:
+                    Jadwal Cron Otomatis Baru:
                   </div>
                   <code className="text-[11px] font-mono text-emerald-400 block bg-black/50 p-2 rounded-lg">
-                    schedule: '0 4 */2 * *'
+                    schedule: '0 */12 * * *'
                   </code>
                   <p className="text-[11px] text-neutral-400 leading-normal">
-                    Server GitHub Actions akan secara mandiri mengirim request HTTP GET ke Supabase setiap 2 hari sekali pukul 11:00 WIB (04:00 UTC) untuk me-reset counter 7 hari.
+                    Berjalan 2x sehari (07:00 &amp; 19:00 WIB) melakukan <code>UPDATE</code> ke tabel <code>keep_alive_heartbeat</code> + multi-table <code>SELECT</code> agar tidak pernah dianggap <em>Low Activity</em>.
                   </p>
                 </div>
               </div>
 
               <div className="p-3 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[11px] font-mono flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 shrink-0 text-purple-400" />
-                <span>File workflow aktif &amp; siap di-commit ke GitHub.</span>
+                <span>Catatan: GitHub menonaktifkan cron jika repo 60 hari tanpa aktivitas/push.</span>
               </div>
             </div>
 
@@ -935,16 +1251,16 @@ ON CONFLICT (id) DO NOTHING;
                   </div>
                   <div>
                     <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold">
-                      Metode 3 (Aktivitas Website)
+                      Metode 3 (Fallback Pintar)
                     </span>
                     <h4 className="text-sm font-black font-display text-slate-100">
-                      Trafik Kunjungan Web
+                      Proteksi Tampilan Website
                     </h4>
                   </div>
                 </div>
 
                 <p className="text-xs text-neutral-300 leading-relaxed">
-                  Setiap kali ada calon customer membuka halaman Beranda, Katalog Mesin, atau Fasilitas Pabrik MM2100, website secara otomatis memanggil data dari Supabase via service content:
+                  Meskipun database Supabase sempat masuk kondisi Paused, seluruh halaman publik website PT. Prima Teknik Trada tetap berjalan normal tanpa layar error berkat fallback data lokal pada:
                 </p>
 
                 <div className="space-y-1.5 text-xs font-mono text-[11px] text-neutral-400">
@@ -962,13 +1278,13 @@ ON CONFLICT (id) DO NOTHING;
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-emerald-400">✓</span>
-                    <span>Pengiriman form RFQ customer</span>
+                    <span>Generate PDF &amp; WhatsApp RFQ</span>
                   </div>
                 </div>
               </div>
 
               <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[11px] leading-relaxed">
-                Jika website Anda dikunjungi setidaknya 1 orang per minggu, Supabase tidak akan pernah dijeda secara alami.
+                Segera klik Restore Project agar penyimpanan form RFQ ke cloud kembali aktif.
               </div>
             </div>
           </div>
