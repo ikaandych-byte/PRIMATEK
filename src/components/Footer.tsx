@@ -173,7 +173,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectPage, onOpenRfq }) => {
           {/* Nav Links Column 3: Quality Credentials */}
           <div className="space-y-3">
             <h4 className="text-white font-semibold font-display tracking-tight text-sm">
-              {language === 'en' ? 'Quality Standards' : 'Standarisasi Mutu'}
+              {language === 'en' ? 'Quality Standards' : 'Standardisasi Mutu'}
             </h4>
             <div className="p-3.5 rounded-xl bg-black/40 border border-neutral-800 space-y-2 text-xs">
               <div className="text-white font-bold font-display">ISO 9001:2015</div>

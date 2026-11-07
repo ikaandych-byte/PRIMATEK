@@ -1,6 +1,6 @@
 export const COMPANY_INFO = {
   name: 'PT. PRIMA TEKNIK TRADA',
-  tagline: 'Your Reliable Sourcing for Customized Machine, Automation System, Precision Parts, Jig & Fixture, Dies & Molds, and Mass Production',
+  tagline: 'Your Trusted Engineering & Manufacturing Partner for Turnkey Automation, Precision Tooling, Dies & Molds, and High-Volume Production',
   legalName: 'PT. PRIMA TEKNIK TRADA',
   nib: '0220000112495',
   iso: 'ISO 9001:2015 (Cert No. MD/PTT954 - IDCAB MANDALA Accredited)',
@@ -19,7 +19,7 @@ export const COMPANY_INFO = {
   employeesEn: '90 Specialists (Data as of Dec 31, 2025)',
   whatsappDirect: '628161922957',
   whatsappDisplay: '+62 816-1922-957',
-  whatsappDefaultMessage: 'Hallo PT Prima Teknik Trada, saya ingin mengetahui produk Customized Machine dari company anda, apakah kita bisa terhubung?',
+  whatsappDefaultMessage: 'Halo Tim PT Prima Teknik Trada, saya ingin berkonsultasi mengenai kebutuhan Customized Machine dan solusi manufaktur presisi. Mohon informasi lebih lanjut.',
 };
 
 export const MILESTONES = [

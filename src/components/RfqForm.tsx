@@ -30,6 +30,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { getLocalizedMachine } from '../utils/localizedData';
 import { supabase } from '../lib/supabase';
+import { sanitizeText, sanitizeUrl, sanitizeEmail, sanitizePhone } from '../utils/security';
 
 interface RfqFormProps {
   rfqItems: RfqItem[];
@@ -103,21 +104,34 @@ export const RfqForm: React.FC<RfqFormProps> = ({
     setRfqRefNumber(ref);
 
     try {
+      // Sanitasi input pengguna untuk mencegah celah injeksi XSS atau payload berbahaya
+      const sanitizedCompany = sanitizeText(formData.companyName, 150);
+      const sanitizedPic = sanitizeText(formData.picName, 100);
+      const sanitizedEmailVal = sanitizeEmail(formData.email);
+      const sanitizedPhoneVal = sanitizePhone(formData.phone);
+      const sanitizedIndustry = sanitizeText(formData.industry, 100);
+      const sanitizedMaterial = sanitizeText(formData.material, 150);
+      const sanitizedTolerance = sanitizeText(formData.tolerance, 100);
+      const sanitizedTimeline = sanitizeText(formData.targetTimeline, 100);
+      const sanitizedQty = sanitizeText(formData.estimatedQty, 80);
+      const sanitizedDrawingLink = sanitizeUrl(formData.drawingLink);
+      const sanitizedNotes = sanitizeText(formData.notes, 3000);
+
       // Simpan isian form RFQ ke tabel Supabase public.rfq_submissions
       const { data, error } = await supabase.from('rfq_submissions').insert([
         {
           rfq_number: ref,
-          company_name: formData.companyName,
-          pic_name: formData.picName,
-          email: formData.email,
-          phone: formData.phone,
-          industry: formData.industry,
-          material: formData.material,
-          tolerance: formData.tolerance,
-          target_timeline: formData.targetTimeline,
-          estimated_qty: formData.estimatedQty,
-          drawing_link: formData.drawingLink || null,
-          notes: formData.notes || null,
+          company_name: sanitizedCompany,
+          pic_name: sanitizedPic,
+          email: sanitizedEmailVal || formData.email.trim(),
+          phone: sanitizedPhoneVal || formData.phone.trim(),
+          industry: sanitizedIndustry,
+          material: sanitizedMaterial,
+          tolerance: sanitizedTolerance,
+          target_timeline: sanitizedTimeline,
+          estimated_qty: sanitizedQty,
+          drawing_link: sanitizedDrawingLink,
+          notes: sanitizedNotes || null,
           items: rfqItems,
           status: 'pending',
           source: 'web_portal',

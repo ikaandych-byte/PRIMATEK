@@ -10,11 +10,7 @@ import {
   Cog,
   CheckCircle2,
   ArrowRight,
-  ShieldCheck,
-  Building2,
-  Sparkles,
   PhoneCall,
-  FileText,
 } from 'lucide-react';
 import facilityImg from '../assets/images/hero_industrial_automation_1790239853481.jpg';
 import { COMPANY_INFO } from '../data/company';
@@ -130,13 +126,12 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 sm:mb-12">
             <div>
               <div
-                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider mb-2 border ${
+                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider mb-2 border ${
                   isDark
                     ? 'bg-amber-400/10 border-amber-400/25 text-amber-400'
                     : 'bg-amber-50 border-amber-300 text-amber-700'
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5" />
                 <span>{t.home.pillarsBadge}</span>
               </div>
               <h2
@@ -307,13 +302,12 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             <div className="lg:col-span-7 p-6 sm:p-10 lg:p-12 space-y-5 sm:space-y-6">
               <div
-                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider border ${
+                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider border ${
                   isDark
                     ? 'bg-amber-400/10 border-amber-400/25 text-amber-400'
                     : 'bg-amber-50 border-amber-300 text-amber-700'
                 }`}
               >
-                <Building2 className="w-3.5 h-3.5" />
                 <span>{t.home.facilityTeaserBadge}</span>
               </div>
 
@@ -414,13 +408,12 @@ export const HomePage: React.FC<HomePageProps> = ({
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-5 sm:space-y-6">
           <div
-            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider border ${
+            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider border ${
               isDark
                 ? 'bg-amber-400/10 border-amber-400/25 text-amber-400'
                 : 'bg-amber-50 border-amber-300 text-amber-700'
             }`}
           >
-            <ShieldCheck className="w-3.5 h-3.5" />
             <span>{t.home.ctaBadge}</span>
           </div>
 
@@ -448,8 +441,8 @@ export const HomePage: React.FC<HomePageProps> = ({
               }}
               className="px-6 py-3.5 text-xs font-bold text-neutral-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20"
             >
-              <FileText className="w-4 h-4" />
               <span>{t.home.ctaRfqBtn}</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
 
             <a

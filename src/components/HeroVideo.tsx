@@ -5,9 +5,6 @@ import {
   Volume2,
   VolumeX,
   ArrowRight,
-  ShieldCheck,
-  Award,
-  Layers,
 } from 'lucide-react';
 import heroPoster from '../assets/images/hero_industrial_automation_1790239853481.jpg';
 import { COMPANY_INFO } from '../data/company';
@@ -194,7 +191,6 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
                 <span className="text-[10px] sm:text-xs tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 font-mono">
                   <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                   {t.hero.isoBadge}
-                  <Award className="w-3.5 h-3.5 text-amber-500" />
                 </span>
                 <span className={isDark ? 'text-neutral-600' : 'text-slate-300'}>|</span>
                 <span className={`text-[10px] sm:text-xs font-mono font-semibold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
@@ -284,13 +280,12 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
 
               <button
                 onClick={onExploreCatalog}
-                className={`group inline-flex transition-all duration-300 text-xs sm:text-sm font-semibold rounded-xl py-3 px-5 sm:px-6 gap-x-2 items-center justify-center cursor-pointer border ${
+                className={`group inline-flex transition-all duration-300 text-xs sm:text-sm font-semibold rounded-xl py-3 px-5 sm:px-6 items-center justify-center cursor-pointer border ${
                   isDark
                     ? 'hover:text-white hover:border-neutral-600 hover:bg-neutral-800/80 text-neutral-200 border-neutral-700 bg-neutral-900/90'
                     : 'hover:text-slate-950 hover:border-slate-400 hover:bg-slate-100 text-slate-800 border-slate-300 bg-white shadow-xs'
                 }`}
               >
-                <Layers className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                 <span>{t.hero.catalogCta}</span>
               </button>
             </div>
@@ -396,13 +391,13 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
                 {/* Header with Factory Badge */}
                 <div className="flex items-center gap-3 mb-4 sm:mb-5">
                   <div
-                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 border ${
+                    className={`h-10 sm:h-12 px-3 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 border font-mono font-black text-xs sm:text-sm tracking-wider ${
                       isDark
                         ? 'bg-amber-400/10 border-amber-400/30 text-amber-400'
-                        : 'bg-amber-50 border-amber-300 text-amber-600'
+                        : 'bg-amber-50 border-amber-300 text-amber-700'
                     }`}
                   >
-                    <Award className="w-5 h-5 sm:w-6 sm:h-6" />
+                    1999
                   </div>
                   <div>
                     <div
@@ -493,27 +488,25 @@ export const HeroVideo: React.FC<HeroVideoProps> = ({
                         : 'bg-slate-100 border-slate-300 text-slate-700'
                     }`}
                   >
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     {t.hero.tagOperational}
                   </span>
                   <span
-                    className={`inline-flex items-center gap-1 text-[10px] sm:text-xs px-2.5 py-1 rounded-full border ${
+                    className={`inline-flex items-center text-[10px] sm:text-xs px-2.5 py-1 rounded-full border ${
                       isDark
                         ? 'bg-neutral-900/80 border-neutral-700/70 text-neutral-300'
                         : 'bg-slate-100 border-slate-300 text-slate-700'
                     }`}
                   >
-                    <Award className="w-3 h-3 text-amber-500" />
                     {t.hero.tagIso}
                   </span>
                   <span
-                    className={`inline-flex items-center gap-1 text-[10px] sm:text-xs px-2.5 py-1 rounded-full border ${
+                    className={`inline-flex items-center text-[10px] sm:text-xs px-2.5 py-1 rounded-full border ${
                       isDark
                         ? 'bg-neutral-900/80 border-neutral-700/70 text-neutral-300'
                         : 'bg-slate-100 border-slate-300 text-slate-700'
                     }`}
                   >
-                    <ShieldCheck className="w-3 h-3 text-emerald-500" />
                     {t.hero.tagLandArea}
                   </span>
                 </div>
