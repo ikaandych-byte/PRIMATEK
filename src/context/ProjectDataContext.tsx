@@ -7,11 +7,15 @@ import {
   ProjectMilestone,
   ProjectPhoto,
   ActivityLogItem,
+  SupplierItem,
+  InventoryStockItem,
 } from '../types/backend';
 import {
   INITIAL_STAFF_ACCOUNTS,
   INITIAL_CUSTOMERS,
   INITIAL_PROJECTS,
+  INITIAL_SUPPLIERS,
+  INITIAL_INVENTORY_STOCKS,
 } from '../data/initialBackendData';
 
 interface ProjectDataContextType {
@@ -19,6 +23,8 @@ interface ProjectDataContextType {
   customers: CustomerAccount[];
   projects: ProjectItem[];
   allPhotos: ProjectPhoto[];
+  suppliers: SupplierItem[];
+  inventoryStocks: InventoryStockItem[];
   // Customer Operations
   addCustomer: (
     data: Omit<CustomerAccount, 'id' | 'registeredAt' | 'status'>
@@ -26,6 +32,14 @@ interface ProjectDataContextType {
   updateCustomer: (id: string, data: Partial<CustomerAccount>) => void;
   deleteCustomer: (id: string) => void;
   updateCustomerPassword: (customerId: string, newPassword: string) => boolean;
+  // Supplier Operations
+  addSupplier: (data: Omit<SupplierItem, 'id'>) => SupplierItem;
+  updateSupplier: (id: string, data: Partial<SupplierItem>) => void;
+  deleteSupplier: (id: string) => void;
+  // Inventory Stock Operations
+  addStockItem: (data: Omit<InventoryStockItem, 'id'>) => InventoryStockItem;
+  updateStockItem: (id: string, data: Partial<InventoryStockItem>) => void;
+  deleteStockItem: (id: string) => void;
   // Project Operations
   addProject: (
     data: Omit<ProjectItem, 'id' | 'photos' | 'activityLogs' | 'milestones'>,
@@ -55,7 +69,9 @@ interface ProjectDataContextType {
   addProjectPhoto: (photo: Omit<ProjectPhoto, 'id' | 'uploadedAt'>) => void;
   deleteProjectPhoto: (photoId: string) => void;
   // Staff Operations
+  addStaff: (data: Omit<InternalStaff, 'id'>) => InternalStaff;
   updateStaff: (staffId: string, data: Partial<InternalStaff>) => void;
+  deleteStaff: (staffId: string) => void;
   updateStaffPassword: (staffId: string, newPassword: string) => void;
   // Schedule Operations
   updateProjectMilestones: (projectId: string, milestones: ProjectMilestone[]) => void;
@@ -68,6 +84,8 @@ interface ProjectDataContextType {
 const STORAGE_STAFF_KEY = 'pttid_staff_accounts_v2';
 const STORAGE_CUSTOMERS_KEY = 'pttid_customers_data_v1';
 const STORAGE_PROJECTS_KEY = 'pttid_projects_data_v2';
+const STORAGE_SUPPLIERS_KEY = 'pttid_suppliers_data_v1';
+const STORAGE_STOCKS_KEY = 'pttid_stocks_data_v1';
 
 const ProjectDataContext = createContext<ProjectDataContextType | undefined>(undefined);
 
@@ -99,6 +117,24 @@ export const ProjectDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   });
 
+  const [suppliers, setSuppliers] = useState<SupplierItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_SUPPLIERS_KEY);
+      return saved ? JSON.parse(saved) : INITIAL_SUPPLIERS;
+    } catch {
+      return INITIAL_SUPPLIERS;
+    }
+  });
+
+  const [inventoryStocks, setInventoryStocks] = useState<InventoryStockItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_STOCKS_KEY);
+      return saved ? JSON.parse(saved) : INITIAL_INVENTORY_STOCKS;
+    } catch {
+      return INITIAL_INVENTORY_STOCKS;
+    }
+  });
+
   // Save to LocalStorage
   useEffect(() => {
     try {
@@ -123,6 +159,22 @@ export const ProjectDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       console.error(e);
     }
   }, [projects]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_SUPPLIERS_KEY, JSON.stringify(suppliers));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [suppliers]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_STOCKS_KEY, JSON.stringify(inventoryStocks));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [inventoryStocks]);
 
   // Aggregate all photos across all projects
   const allPhotos: ProjectPhoto[] = projects.flatMap((p) => p.photos || []);
@@ -156,6 +208,46 @@ export const ProjectDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const deleteCustomer = (id: string) => {
     setCustomers((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  // Supplier CRUD
+  const addSupplier = (data: Omit<SupplierItem, 'id'>): SupplierItem => {
+    const newSup: SupplierItem = {
+      ...data,
+      id: `sup-${Date.now()}`,
+    };
+    setSuppliers((prev) => [newSup, ...prev]);
+    return newSup;
+  };
+
+  const updateSupplier = (id: string, data: Partial<SupplierItem>) => {
+    setSuppliers((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...data } : s))
+    );
+  };
+
+  const deleteSupplier = (id: string) => {
+    setSuppliers((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  // Inventory Stock CRUD
+  const addStockItem = (data: Omit<InventoryStockItem, 'id'>): InventoryStockItem => {
+    const newStock: InventoryStockItem = {
+      ...data,
+      id: `stk-${Date.now()}`,
+    };
+    setInventoryStocks((prev) => [newStock, ...prev]);
+    return newStock;
+  };
+
+  const updateStockItem = (id: string, data: Partial<InventoryStockItem>) => {
+    setInventoryStocks((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...data } : s))
+    );
+  };
+
+  const deleteStockItem = (id: string) => {
+    setInventoryStocks((prev) => prev.filter((s) => s.id !== id));
   };
 
   const updateCustomerPassword = (customerId: string, newPassword: string): boolean => {
@@ -418,10 +510,23 @@ export const ProjectDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     );
   };
 
+  const addStaff = (data: Omit<InternalStaff, 'id'>): InternalStaff => {
+    const newStaff: InternalStaff = {
+      ...data,
+      id: `stf-${Date.now()}`,
+    };
+    setStaffAccounts((prev) => [...prev, newStaff]);
+    return newStaff;
+  };
+
   const updateStaff = (staffId: string, data: Partial<InternalStaff>) => {
     setStaffAccounts((prev) =>
       prev.map((s) => (s.id === staffId ? { ...s, ...data } : s))
     );
+  };
+
+  const deleteStaff = (staffId: string) => {
+    setStaffAccounts((prev) => prev.filter((s) => s.id !== staffId));
   };
 
   const updateStaffPassword = (staffId: string, newPassword: string) => {
@@ -466,9 +571,13 @@ export const ProjectDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setStaffAccounts(INITIAL_STAFF_ACCOUNTS);
     setCustomers(INITIAL_CUSTOMERS);
     setProjects(INITIAL_PROJECTS);
+    setSuppliers(INITIAL_SUPPLIERS);
+    setInventoryStocks(INITIAL_INVENTORY_STOCKS);
     localStorage.removeItem(STORAGE_STAFF_KEY);
     localStorage.removeItem(STORAGE_CUSTOMERS_KEY);
     localStorage.removeItem(STORAGE_PROJECTS_KEY);
+    localStorage.removeItem(STORAGE_SUPPLIERS_KEY);
+    localStorage.removeItem(STORAGE_STOCKS_KEY);
   };
 
   return (
@@ -478,10 +587,18 @@ export const ProjectDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         customers,
         projects,
         allPhotos,
+        suppliers,
+        inventoryStocks,
         addCustomer,
         updateCustomer,
         deleteCustomer,
         updateCustomerPassword,
+        addSupplier,
+        updateSupplier,
+        deleteSupplier,
+        addStockItem,
+        updateStockItem,
+        deleteStockItem,
         addProject,
         updateProject,
         deleteProject,
@@ -491,7 +608,9 @@ export const ProjectDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         updateProjectMilestones,
         addProjectPhoto,
         deleteProjectPhoto,
+        addStaff,
         updateStaff,
+        deleteStaff,
         updateStaffPassword,
         generateRandomPassword,
         getProjectsByCustomer,

@@ -49,6 +49,7 @@ import {
   DEPT_LIST,
   DeptKey,
 } from '../utils/departmentDataUtils';
+import { getSafeImageUrl } from '../utils/googleDrive';
 
 interface CustomerPortalPageProps {
   onBackToHome: () => void;
@@ -969,9 +970,13 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
                               className="group relative rounded-2xl overflow-hidden aspect-video bg-neutral-900 border border-neutral-800 cursor-pointer shadow-md hover:border-amber-500/50 transition-all"
                             >
                               <img
-                                src={photo.imageUrl}
+                                src={getSafeImageUrl(photo.imageUrl)}
                                 alt={photo.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  (e.target as any).src =
+                                    'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80';
+                                }}
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-3.5 text-white">
                                 <div className="flex items-center gap-1.5 mb-1">
@@ -1218,9 +1223,13 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({
               ✕
             </button>
             <img
-              src={selectedPhotoPreview.imageUrl}
+              src={getSafeImageUrl(selectedPhotoPreview.imageUrl)}
               alt={selectedPhotoPreview.title}
               className="w-full max-h-[70vh] object-contain bg-black"
+              onError={(e) => {
+                (e.target as any).src =
+                  'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80';
+              }}
             />
             <div className="p-5 space-y-1.5 bg-neutral-900/90 border-t border-neutral-800">
               <div className="flex items-center gap-2">

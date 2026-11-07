@@ -36,6 +36,35 @@ export interface CustomerAccount {
   status: 'active' | 'verified';
 }
 
+export interface SupplierItem {
+  id: string;
+  supplierCode: string;
+  supplierName: string;
+  category: 'Raw Material' | 'Pneumatics' | 'Electrical & PLC' | 'Motion & Tooling' | 'Subcon Services';
+  picName: string;
+  phone: string;
+  email: string;
+  address: string;
+  rating: number; // 1-5
+  isActive: boolean;
+}
+
+export interface InventoryStockItem {
+  id: string;
+  itemCode: string;
+  itemName: string;
+  category: 'Raw Material' | 'Pneumatics' | 'Electrical' | 'Hardware' | 'Cutting Tool';
+  specification: string;
+  supplierId?: string;
+  supplierName?: string;
+  stockQty: number;
+  unit: string; // Pcs, Bar, Kg, Box
+  minStockAlert: number;
+  unitCost: number; // IDR
+  warehouseRack: string;
+  lastRestockDate: string;
+}
+
 export type ProjectStatus =
   | 'Engineering Design'
   | 'Fabrication & Machining'

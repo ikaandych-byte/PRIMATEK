@@ -62,6 +62,7 @@ import {
 
 import { ProjectDetailModal } from '../components/admin/ProjectDetailModal';
 import { EditStaffModal } from '../components/admin/EditStaffModal';
+import { AddStaffModal } from '../components/admin/AddStaffModal';
 import { EditCustomerModal } from '../components/admin/EditCustomerModal';
 import { EditProjectModal } from '../components/admin/EditProjectModal';
 import { ManageMilestonesModal } from '../components/admin/ManageMilestonesModal';
@@ -69,6 +70,9 @@ import { FinanceControlSection } from '../components/admin/FinanceControlSection
 import { DepartmentWorkspace } from '../components/departments/DepartmentWorkspace';
 import { DatabaseSupabaseSection } from '../components/admin/DatabaseSupabaseSection';
 import { RfqInquiriesSection } from '../components/admin/RfqInquiriesSection';
+import { SupplierAndStockSection } from '../components/admin/SupplierAndStockSection';
+import { CatalogManagerSection } from '../components/admin/CatalogManagerSection';
+import { parseGoogleDriveUrl, getSafeImageUrl } from '../utils/googleDrive';
 
 interface BackendAdminPageProps {
   onBackToHome: () => void;
@@ -79,7 +83,9 @@ type AdminTab =
   | 'overview'
   | 'finance'
   | 'departments'
+  | 'catalog'
   | 'customers'
+  | 'suppliers-stocks'
   | 'projects'
   | 'schedule'
   | 'gallery'
@@ -124,6 +130,8 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
     customers,
     projects,
     allPhotos,
+    suppliers,
+    inventoryStocks,
     addCustomer,
     updateCustomer,
     deleteCustomer,
@@ -134,7 +142,9 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
     updateMilestoneStatus,
     addProjectPhoto,
     deleteProjectPhoto,
+    addStaff,
     updateStaff,
+    deleteStaff,
     updateProjectMilestones,
     generateRandomPassword,
   } = useProjectData();
@@ -149,6 +159,7 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
   const [showStaffPasswords, setShowStaffPasswords] = useState<Record<string, boolean>>({});
 
   // Modal States
+  const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isAddPhotoOpen, setIsAddPhotoOpen] = useState(false);
@@ -456,7 +467,21 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                   : `Modul: ${user?.department || 'Departemen'}`,
                 icon: Sliders,
               },
+              ...(canAccessAll
+                ? [
+                    {
+                      id: 'catalog',
+                      label: 'Katalog Mesin (CRUD)',
+                      icon: Wrench,
+                    },
+                  ]
+                : []),
               { id: 'customers', label: `Data Customer (${customers.length})`, icon: Users },
+              {
+                id: 'suppliers-stocks',
+                label: `Supplier & Stock (${inventoryStocks.length})`,
+                icon: Truck,
+              },
               { id: 'projects', label: `Data Project (${projects.length})`, icon: FolderKanban },
               { id: 'schedule', label: 'Schedule & Progress', icon: CalendarClock },
               { id: 'gallery', label: `Foto Hasil Project (${allPhotos.length})`, icon: Images },
@@ -839,6 +864,16 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
             isAdmin={isAdmin}
             onUpdateProject={updateProject}
           />
+        )}
+
+        {/* ======================= TAB: MANAJEMEN KATALOG MESIN (GENERAL ADMIN & ADMIN) ======================= */}
+        {activeTab === 'catalog' && canAccessAll && (
+          <CatalogManagerSection />
+        )}
+
+        {/* ======================= TAB: DATA SUPPLIER & DATA STOCK ======================= */}
+        {activeTab === 'suppliers-stocks' && (
+          <SupplierAndStockSection />
         )}
 
         {/* ======================= TAB 2: DATA CUSTOMER ======================= */}
@@ -1419,9 +1454,19 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
               <div>
                 <h2 className="text-xl font-extrabold font-display">Akses Login Karyawan &amp; Administrator</h2>
                 <p className="text-xs text-neutral-400">
-                  Daftar 11 akun resmi internal PT. Prima Teknik Trada dengan sistem password tergenerate
+                  Daftar akun resmi internal PT. Prima Teknik Trada dengan sistem hak akses per departemen
                 </p>
               </div>
+
+              {isAdmin && (
+                <button
+                  onClick={() => setIsAddStaffOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 cursor-pointer transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Staf Karyawan Baru</span>
+                </button>
+              )}
             </div>
 
             {/* Staff Table */}
@@ -1527,14 +1572,29 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             {isAdmin ? (
-                              <button
-                                onClick={() => setEditingStaff(staff)}
-                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-neutral-950 font-bold text-xs cursor-pointer transition-colors shadow-xs"
-                                title="Edit Data & Hak Akses Staff (Khusus Administrator)"
-                              >
-                                <Edit className="w-3.5 h-3.5" />
-                                <span>Edit</span>
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => setEditingStaff(staff)}
+                                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-neutral-950 font-bold text-xs cursor-pointer transition-colors shadow-xs"
+                                  title="Edit Data & Hak Akses Staff (Khusus Administrator)"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                  <span>Edit</span>
+                                </button>
+                                {staff.role !== 'Administrator Full Access' && (
+                                  <button
+                                    onClick={() => {
+                                      if (confirm(`Hapus akun staf "${staff.name}" (${staff.department})?`)) {
+                                        deleteStaff(staff.id);
+                                      }
+                                    }}
+                                    className="p-1 rounded-lg hover:bg-rose-500/20 text-neutral-400 hover:text-rose-400 cursor-pointer transition-colors"
+                                    title="Hapus Staf"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </>
                             ) : (
                               <span className="inline-flex items-center gap-1 text-[10px] font-mono text-neutral-500 px-2 py-0.5 rounded border border-neutral-800">
                                 <Lock className="w-3 h-3 text-neutral-500" />
@@ -2080,15 +2140,49 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
                     </div>
                   ))}
                 </div>
-                <input
-                  type="url"
-                  placeholder="Atau masukkan URL foto kustom (https://...)"
-                  value={newPhotoForm.imageUrl}
-                  onChange={(e) => setNewPhotoForm({ ...newPhotoForm, imageUrl: e.target.value })}
-                  className={`w-full px-3 py-2 text-xs font-mono rounded-xl border outline-none ${
-                    isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-300'
-                  }`}
-                />
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold">URL Foto Project (Web Link / Google Drive)</span>
+                    <span className="text-[10px] font-mono text-cyan-400">✓ Auto-Convert Google Drive</span>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Tempel link Google Drive (https://drive.google.com/file/d/.../view) atau URL web biasa"
+                    value={newPhotoForm.imageUrl}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const parsed = parseGoogleDriveUrl(val);
+                      setNewPhotoForm({
+                        ...newPhotoForm,
+                        imageUrl: parsed.isGoogleDrive && parsed.directImageUrl ? parsed.directImageUrl : val,
+                      });
+                    }}
+                    className={`w-full px-3 py-2 text-xs font-mono rounded-xl border outline-none ${
+                      isDark ? 'bg-neutral-900 border-neutral-800 text-purple-300' : 'bg-white border-slate-300 text-purple-700'
+                    }`}
+                  />
+                  {newPhotoForm.imageUrl && (
+                    <div className="mt-2 p-2 rounded-xl bg-neutral-900/80 border border-neutral-800 flex items-center gap-3">
+                      <img
+                        src={getSafeImageUrl(newPhotoForm.imageUrl)}
+                        alt="Preview"
+                        className="w-16 h-12 object-cover rounded-lg bg-black shrink-0 border border-neutral-700"
+                        onError={(e) => {
+                          (e.target as any).src =
+                            'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80';
+                        }}
+                      />
+                      <div className="text-[11px] leading-tight text-neutral-300">
+                        <span className="text-emerald-400 font-bold block">✓ Gambar Siap Dipublikasikan</span>
+                        <span className="text-neutral-400 text-[10px]">
+                          Preview langsung aktif tanpa hambatan login/CORS Google Drive.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -2175,6 +2269,16 @@ export const BackendAdminPage: React.FC<BackendAdminPageProps> = ({
           staff={editingStaff}
           onClose={() => setEditingStaff(null)}
           onSave={(staffId, updatedData) => updateStaff(staffId, updatedData)}
+          generatePassword={() => generateRandomPassword('STAFF')}
+        />
+      )}
+
+      {/* ======================= MODAL: TAMBAH STAF BARU ======================= */}
+      {isAddStaffOpen && (
+        <AddStaffModal
+          isOpen={isAddStaffOpen}
+          onClose={() => setIsAddStaffOpen(false)}
+          onAdd={(data) => addStaff(data)}
           generatePassword={() => generateRandomPassword('STAFF')}
         />
       )}

@@ -16,6 +16,7 @@ import { MachineItem, MachineCategory } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getLocalizedMachine } from '../utils/localizedData';
+import { getSafeImageUrl } from '../utils/googleDrive';
 
 interface CatalogSectionProps {
   selectedCategory: MachineCategory;
@@ -47,6 +48,19 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
 
   useEffect(() => {
     let isMounted = true;
+    try {
+      const customSaved = localStorage.getItem('pttid_custom_catalog_machines_v1');
+      if (customSaved) {
+        const parsed = JSON.parse(customSaved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setRawMachines(parsed);
+          return;
+        }
+      }
+    } catch (e) {
+      // fallback
+    }
+
     getMachinesFromDb().then((data) => {
       if (isMounted && data && data.length > 0) {
         setRawMachines(data);
@@ -401,10 +415,14 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                   {/* Image Container with Zoom effect */}
                   <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-900">
                     <img
-                      src={machine.image}
+                      src={getSafeImageUrl(machine.image)}
                       alt={machine.name}
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        (e.target as any).src =
+                          'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80';
+                      }}
                     />
                     <div
                       className={`absolute inset-0 bg-gradient-to-t opacity-80 ${
