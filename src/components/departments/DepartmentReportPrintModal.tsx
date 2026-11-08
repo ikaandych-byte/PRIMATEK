@@ -43,8 +43,8 @@ export const DepartmentReportPrintModal: React.FC<DepartmentReportPrintModalProp
               <Printer className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-neutral-900">Rekap Cetak Laba Rugi &amp; Laporan Departemen</h3>
-              <p className="text-xs text-neutral-600">Format standar cetak fisik dan PDF ukuran A4</p>
+              <h3 className="text-base font-bold text-neutral-900">Format Cetak Resmi A4 (Laporan Departemen)</h3>
+              <p className="text-xs text-neutral-600">Standar cetak dokumen fisik dan PDF perusahaan</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export const DepartmentReportPrintModal: React.FC<DepartmentReportPrintModalProp
           </div>
         </div>
 
-        {/* Printable Report Body (A4 Style, White bg, Black text, Professional font) */}
+        {/* Printable Report Body (A4 Style, White bg, Black text, Professional font, single-page flow) */}
         <div className="p-8 sm:p-12 overflow-y-auto space-y-6 bg-white text-neutral-900 print:p-0 print:m-0 font-sans">
           
           {/* Header Kop Perusahaan */}
@@ -87,7 +87,7 @@ export const DepartmentReportPrintModal: React.FC<DepartmentReportPrintModalProp
             </div>
             <div className="text-right shrink-0 space-y-1 font-mono text-xs">
               <div className="px-3 py-1 rounded-lg bg-neutral-100 font-bold text-neutral-900 inline-block border border-neutral-300">
-                REKAP CETAK LABA RUGI
+                REKAPITULASI LAPORAN
               </div>
               <div className="text-[11px] text-neutral-600">
                 Tanggal: {currentDate}
@@ -95,17 +95,17 @@ export const DepartmentReportPrintModal: React.FC<DepartmentReportPrintModalProp
             </div>
           </div>
 
-          {/* Title Departemen */}
-          <div className="text-center space-y-1.5 py-3">
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-neutral-900 font-display">
-              REKAP CETAK LABA RUGI &amp; LAPORAN {departmentMeta.label}
+          {/* Title Departemen (Sesuai permintaan: Hanya nama proses departemennya, tanpa kalimat rangkap laba rugi) */}
+          <div className="text-center space-y-1 py-2">
+            <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight text-neutral-900 font-display">
+              LAPORAN KEMAJUAN &amp; REKAPITULASI {departmentMeta.label}
             </h2>
             <p className="text-xs text-neutral-600 font-mono">
-              Cakupan Proyek / Departemen: <span className="font-bold text-neutral-900">{selectedProjectName || 'Semua Proyek Aktif (All Projects)'}</span>
+              Cakupan Proyek: <span className="font-bold text-neutral-900">{selectedProjectName || 'Semua Proyek Aktif (All Projects)'}</span>
             </p>
           </div>
 
-          {/* Data Summary Table (Clean Black & White A4 format without repeated headers or rows) */}
+          {/* Data Summary Table (Clean Black & White A4 format, single set of unique records) */}
           <div className="border border-neutral-300 rounded-xl overflow-hidden shadow-xs">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
@@ -159,7 +159,7 @@ export const DepartmentReportPrintModal: React.FC<DepartmentReportPrintModalProp
           </div>
 
           {/* Signature Block */}
-          <div className="pt-12 grid grid-cols-3 gap-8 text-center text-xs page-break-inside-avoid">
+          <div className="pt-10 grid grid-cols-3 gap-8 text-center text-xs page-break-inside-avoid">
             <div className="space-y-16">
               <div>
                 <p className="font-semibold text-neutral-800">Disetujui Oleh,</p>
