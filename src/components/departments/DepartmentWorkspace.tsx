@@ -35,6 +35,7 @@ import {
 } from '../../utils/departmentDataUtils';
 import { ProjectItem, DepartmentJobdesksData } from '../../types/backend';
 import { DepartmentItemModal } from './DepartmentItemModal';
+import { DepartmentReportPrintModal } from './DepartmentReportPrintModal';
 
 interface DepartmentWorkspaceProps {
   projects: ProjectItem[];
@@ -75,6 +76,7 @@ export const DepartmentWorkspace: React.FC<DepartmentWorkspaceProps> = ({
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [modalTargetProject, setModalTargetProject] = useState<ProjectItem | null>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
 
@@ -423,7 +425,7 @@ export const DepartmentWorkspace: React.FC<DepartmentWorkspaceProps> = ({
               {/* Action Buttons */}
               <div className="flex items-center gap-3 shrink-0">
                 <button
-                  onClick={() => window.print()}
+                  onClick={() => setIsPrintModalOpen(true)}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 text-xs font-bold transition-all cursor-pointer shadow-xs"
                 >
                   <Printer className="w-4 h-4" />
@@ -905,6 +907,19 @@ export const DepartmentWorkspace: React.FC<DepartmentWorkspaceProps> = ({
           currentUserEmail={currentUser?.email || 'staff@pttid.com'}
         />
       )}
+
+      {/* Print Report Preview Modal */}
+      <DepartmentReportPrintModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        departmentMeta={currentMeta}
+        aggregatedItems={aggregatedItems}
+        selectedProjectName={
+          selectedProjectId === 'all'
+            ? 'Semua Proyek Aktif (All Projects)'
+            : projects.find((p) => p.id === selectedProjectId)?.projectName
+        }
+      />
     </div>
   );
 };
