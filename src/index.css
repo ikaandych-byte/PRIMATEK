@@ -153,33 +153,30 @@
     background: #ffffff !important;
     color: #000000 !important;
     width: 210mm;
-    height: 297mm;
+    height: auto !important;
     overflow: visible !important;
   }
-  /* Hide all elements in app except the print modal body */
-  body > * {
+  /* Hide UI elements outside report container */
+  header, footer, nav, aside, .print\:hidden {
     display: none !important;
   }
-  /* Show only the active print modal container */
+  /* Reset fixed modal overlay for print flow */
   .fixed {
-    position: static !important;
-    display: block !important;
-    background: #ffffff !important;
+    position: relative !important;
+    background: transparent !important;
     backdrop-filter: none !important;
     padding: 0 !important;
     margin: 0 !important;
     overflow: visible !important;
     width: 100% !important;
-  }
-  /* Hide modal header, toolbar and pagination buttons during print */
-  .print\:hidden {
-    display: none !important;
+    inset: auto !important;
   }
   .bg-white.text-neutral-900.rounded-3xl {
     border: none !important;
     box-shadow: none !important;
     max-height: none !important;
     width: 100% !important;
+    margin: 0 !important;
   }
   .page-break-inside-avoid {
     break-inside: avoid;
