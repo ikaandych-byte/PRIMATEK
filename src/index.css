@@ -147,34 +147,40 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm;
+    margin: 10mm;
   }
   body, html {
     background: #ffffff !important;
     color: #000000 !important;
     width: 210mm;
+    height: 297mm;
+    overflow: visible !important;
   }
+  /* Hide all elements in app except the print modal body */
+  body > * {
+    display: none !important;
+  }
+  /* Show only the active print modal container */
+  .fixed {
+    position: static !important;
+    display: block !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  /* Hide modal header, toolbar and pagination buttons during print */
   .print\:hidden {
     display: none !important;
   }
-  /* Hide UI chrome */
-  header, footer, nav, aside {
-    display: none !important;
-  }
-  /* Ensure modal backdrop and container don't clip print */
-  .fixed {
-    position: static !important;
-    background: none !important;
-    backdrop-filter: none !important;
-    padding: 0 !important;
-    overflow: visible !important;
-  }
-  .max-h-\[95vh\] {
-    max-height: none !important;
+  .bg-white.text-neutral-900.rounded-3xl {
     border: none !important;
     box-shadow: none !important;
+    max-height: none !important;
+    width: 100% !important;
   }
-  /* Page break rules for pagination */
   .page-break-inside-avoid {
     break-inside: avoid;
     page-break-inside: avoid;
