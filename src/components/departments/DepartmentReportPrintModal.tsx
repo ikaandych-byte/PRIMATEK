@@ -43,8 +43,8 @@ export const DepartmentReportPrintModal: React.FC<DepartmentReportPrintModalProp
               <Printer className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-neutral-900">Format Cetak Resmi A4 (Laba Rugi &amp; Rekap Departemen)</h3>
-              <p className="text-xs text-neutral-600">Standar cetak dokumen fisik dan PDF perusahaan</p>
+              <h3 className="text-base font-bold text-neutral-900">Rekap Cetak Laba Rugi &amp; Laporan Departemen</h3>
+              <p className="text-xs text-neutral-600">Format standar cetak fisik dan PDF ukuran A4</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export const DepartmentReportPrintModal: React.FC<DepartmentReportPrintModalProp
             </div>
             <div className="text-right shrink-0 space-y-1 font-mono text-xs">
               <div className="px-3 py-1 rounded-lg bg-neutral-100 font-bold text-neutral-900 inline-block border border-neutral-300">
-                REKAPITULASI LAPORAN
+                REKAP CETAK LABA RUGI
               </div>
               <div className="text-[11px] text-neutral-600">
                 Tanggal: {currentDate}
@@ -98,14 +98,14 @@ export const DepartmentReportPrintModal: React.FC<DepartmentReportPrintModalProp
           {/* Title Departemen */}
           <div className="text-center space-y-1.5 py-3">
             <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-neutral-900 font-display">
-              REKAP CETAK LABA RUGI &amp; KEMAJUAN {departmentMeta.label}
+              REKAP CETAK LABA RUGI &amp; LAPORAN {departmentMeta.label}
             </h2>
             <p className="text-xs text-neutral-600 font-mono">
               Cakupan Proyek / Departemen: <span className="font-bold text-neutral-900">{selectedProjectName || 'Semua Proyek Aktif (All Projects)'}</span>
             </p>
           </div>
 
-          {/* Data Summary Table (Clean Black & White A4 format) */}
+          {/* Data Summary Table (Clean Black & White A4 format without repeated headers or rows) */}
           <div className="border border-neutral-300 rounded-xl overflow-hidden shadow-xs">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
