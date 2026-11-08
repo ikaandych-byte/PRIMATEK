@@ -32,6 +32,7 @@ import {
   CalculatedProjectFinance,
 } from '../../utils/financeUtils';
 import { EditFinanceModal } from './EditFinanceModal';
+import { FinanceReportPrintModal } from './FinanceReportPrintModal';
 
 interface FinanceControlSectionProps {
   projects: ProjectItem[];
@@ -765,76 +766,12 @@ export const FinanceControlSection: React.FC<FinanceControlSectionProps> = ({
         />
       )}
 
-      {/* Print / Export Report Modal */}
-      {showPrintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div
-            className={`w-full max-w-3xl rounded-3xl border shadow-2xl p-6 sm:p-8 space-y-6 my-8 ${
-              isDark ? 'bg-[#0f141f] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-            }`}
-          >
-            <div className="flex items-center justify-between pb-4 border-b border-inherit">
-              <div>
-                <h3 className="text-lg font-black font-display">Laporan Rekapitulasi Arus Kas &amp; Laba Rugi</h3>
-                <p className="text-xs text-neutral-400">
-                  PT. Prima Teknik Trada — Industrial Engineering &amp; Machinery Automation
-                </p>
-              </div>
-              <button
-                onClick={() => setShowPrintModal(false)}
-                className="p-1 rounded-lg hover:bg-neutral-800 text-neutral-400 cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800 space-y-2 text-xs font-mono">
-              <div className="flex justify-between py-1 border-b border-neutral-800">
-                <span className="text-neutral-400">Total Omzet Nilai PO (Revenue):</span>
-                <span className="font-bold text-emerald-400">{formatRupiah(aggregates.totalContractValue)}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-neutral-800">
-                <span className="text-neutral-400">Total Kas Masuk Diterima (Realized Inflow):</span>
-                <span className="font-bold text-emerald-300">{formatRupiah(aggregates.totalCashInflow)}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-neutral-800">
-                <span className="text-neutral-400">Total Piutang Outstanding:</span>
-                <span className="font-bold text-amber-400">{formatRupiah(aggregates.totalReceivables)}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-neutral-800">
-                <span className="text-neutral-400">Total Beban Biaya Produksi (HPP):</span>
-                <span className="font-bold text-red-400">{formatRupiah(aggregates.totalHppCost)}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-neutral-800">
-                <span className="text-neutral-400">Beban Pajak PPh 23 (2%):</span>
-                <span className="font-bold text-purple-400">{formatRupiah(aggregates.totalTaxPph23)}</span>
-              </div>
-              <div className="flex justify-between py-2 text-sm font-black text-emerald-400 border-t-2 border-emerald-500/50">
-                <span>NETTO LABA BERSIH PERUSAHAAN:</span>
-                <span>{formatRupiah(aggregates.totalNetProfit)} ({aggregates.avgNetProfitMargin}%)</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-inherit">
-              <button
-                onClick={() => setShowPrintModal(false)}
-                className="px-4 py-2 rounded-xl border border-neutral-700 text-xs font-bold cursor-pointer"
-              >
-                Tutup
-              </button>
-              <button
-                onClick={() => {
-                  window.print();
-                }}
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 text-xs font-bold shadow-md shadow-amber-400/20 cursor-pointer"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Cetak / Cetak PDF</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Print / Export Report Modal (A4 Corporate Layout, Logo, Pagination, Isolated Print) */}
+      <FinanceReportPrintModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        projects={projects}
+      />
     </div>
   );
 };

@@ -172,7 +172,8 @@
   }
 
   /* Show the standalone print portal attached directly to document.body */
-  body.has-print-modal-open #department-print-portal {
+  body.has-print-modal-open #department-print-portal,
+  body.has-print-modal-open #finance-print-portal {
     display: block !important;
     position: static !important;
     width: 100% !important;
