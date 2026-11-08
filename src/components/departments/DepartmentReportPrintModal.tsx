@@ -64,64 +64,64 @@ export const DepartmentReportPrintModal: React.FC<DepartmentReportPrintModalProp
           </div>
         </div>
 
-        {/* Printable Report Body (A4 Style, White bg, Black text, Professional font, single-page flow) */}
-        <div className="p-8 sm:p-12 overflow-y-auto space-y-6 bg-white text-neutral-900 print:p-0 print:m-0 font-sans">
+        {/* Printable Report Body (A4 Style, White bg, Black text, Compact spacing for single/multi page flow without overflow) */}
+        <div className="p-6 sm:p-10 overflow-y-auto space-y-4 bg-white text-neutral-900 print:p-0 print:m-0 font-sans text-xs">
           
           {/* Header Kop Perusahaan */}
-          <div className="border-b-2 border-neutral-900 pb-5 flex items-start justify-between">
-            <div className="flex items-center gap-4">
+          <div className="border-b-2 border-neutral-900 pb-3 flex items-start justify-between">
+            <div className="flex items-center gap-3">
               <div className="shrink-0">
-                <PrimatechLogo forceDark={false} className="h-12 w-auto max-w-[200px]" />
+                <PrimatechLogo forceDark={false} className="h-10 w-auto max-w-[180px]" />
               </div>
               <div className="space-y-0.5">
-                <h1 className="text-xl font-black tracking-tight text-neutral-900 uppercase font-display">
+                <h1 className="text-base font-black tracking-tight text-neutral-900 uppercase font-display">
                   {COMPANY_INFO.name}
                 </h1>
-                <p className="text-[11px] text-neutral-700 font-mono">
+                <p className="text-[10px] text-neutral-700 font-mono">
                   {COMPANY_INFO.address}
                 </p>
-                <p className="text-[11px] text-neutral-700 font-mono">
+                <p className="text-[10px] text-neutral-700 font-mono">
                   Tel: {COMPANY_INFO.phone} | Email: {COMPANY_INFO.emailPrimary} | Web: {COMPANY_INFO.website}
                 </p>
               </div>
             </div>
-            <div className="text-right shrink-0 space-y-1 font-mono text-xs">
-              <div className="px-3 py-1 rounded-lg bg-neutral-100 font-bold text-neutral-900 inline-block border border-neutral-300">
+            <div className="text-right shrink-0 space-y-0.5 font-mono text-[11px]">
+              <div className="px-2.5 py-0.5 rounded bg-neutral-100 font-bold text-neutral-900 inline-block border border-neutral-300">
                 REKAPITULASI LAPORAN
               </div>
-              <div className="text-[11px] text-neutral-600">
+              <div className="text-[10px] text-neutral-600">
                 Tanggal: {currentDate}
               </div>
             </div>
           </div>
 
-          {/* Title Departemen (Sesuai permintaan: Hanya nama proses departemennya, tanpa kalimat rangkap laba rugi) */}
-          <div className="text-center space-y-1 py-2">
-            <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight text-neutral-900 font-display">
+          {/* Title Departemen (Nama proses departemen bersih) */}
+          <div className="text-center space-y-1 py-1">
+            <h2 className="text-base sm:text-lg font-black uppercase tracking-tight text-neutral-900 font-display">
               LAPORAN KEMAJUAN &amp; REKAPITULASI {departmentMeta.label}
             </h2>
-            <p className="text-xs text-neutral-600 font-mono">
+            <p className="text-[11px] text-neutral-600 font-mono">
               Cakupan Proyek: <span className="font-bold text-neutral-900">{selectedProjectName || 'Semua Proyek Aktif (All Projects)'}</span>
             </p>
           </div>
 
-          {/* Data Summary Table (Clean Black & White A4 format, single set of unique records) */}
-          <div className="border border-neutral-300 rounded-xl overflow-hidden shadow-xs">
-            <table className="w-full text-left border-collapse text-xs">
+          {/* Data Summary Table (Compact padding to prevent unnecessary page wrapping) */}
+          <div className="border border-neutral-300 rounded-lg overflow-hidden">
+            <table className="w-full text-left border-collapse text-[11px]">
               <thead>
                 <tr className="bg-neutral-100 text-neutral-900 font-mono uppercase tracking-wider border-b border-neutral-300">
-                  <th className="p-3 font-bold w-12 text-center text-neutral-900">No</th>
-                  <th className="p-3 font-bold text-neutral-900">Nama Proyek / PO</th>
-                  <th className="p-3 font-bold text-neutral-900">Rincian Pekerjaan / Task</th>
-                  <th className="p-3 font-bold text-neutral-900">PIC / Pelaksana</th>
-                  <th className="p-3 font-bold text-neutral-900">Target Tanggal</th>
-                  <th className="p-3 font-bold text-center text-neutral-900">Status / Progress</th>
+                  <th className="p-2.5 font-bold w-10 text-center text-neutral-900">No</th>
+                  <th className="p-2.5 font-bold text-neutral-900">Nama Proyek / PO</th>
+                  <th className="p-2.5 font-bold text-neutral-900">Rincian Pekerjaan / Task</th>
+                  <th className="p-2.5 font-bold text-neutral-900">PIC / Pelaksana</th>
+                  <th className="p-2.5 font-bold text-neutral-900">Target Tanggal</th>
+                  <th className="p-2.5 font-bold text-center text-neutral-900">Status / Progress</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200">
                 {aggregatedItems.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-neutral-500 italic">
+                    <td colSpan={6} className="p-6 text-center text-neutral-500 italic">
                       Belum ada data tercatat untuk departemen ini.
                     </td>
                   </tr>
@@ -134,19 +134,19 @@ export const DepartmentReportPrintModal: React.FC<DepartmentReportPrintModalProp
 
                     return (
                       <tr key={item.id || idx} className="hover:bg-neutral-50">
-                        <td className="p-3 text-center font-mono text-neutral-700">{idx + 1}</td>
-                        <td className="p-3 font-semibold text-neutral-900">
+                        <td className="p-2.5 text-center font-mono text-neutral-700">{idx + 1}</td>
+                        <td className="p-2.5 font-semibold text-neutral-900">
                           <div>{project.projectName}</div>
                           <div className="text-[10px] text-neutral-600 font-mono">{project.poNumber}</div>
                         </td>
-                        <td className="p-3">
+                        <td className="p-2.5">
                           <div className="font-medium text-neutral-900">{taskName}</div>
                           {item.notes && <div className="text-[10px] text-neutral-600 italic mt-0.5">{item.notes}</div>}
                         </td>
-                        <td className="p-3 font-mono text-neutral-800">{picName}</td>
-                        <td className="p-3 font-mono text-neutral-800">{deadline}</td>
-                        <td className="p-3 text-center font-mono">
-                          <span className="inline-block px-2.5 py-1 rounded border border-neutral-400 bg-neutral-100 text-neutral-900 font-bold text-[10px]">
+                        <td className="p-2.5 font-mono text-neutral-800">{picName}</td>
+                        <td className="p-2.5 font-mono text-neutral-800">{deadline}</td>
+                        <td className="p-2.5 text-center font-mono">
+                          <span className="inline-block px-2 py-0.5 rounded border border-neutral-400 bg-neutral-100 text-neutral-900 font-bold text-[10px]">
                             {statusVal}
                           </span>
                         </td>
@@ -158,23 +158,23 @@ export const DepartmentReportPrintModal: React.FC<DepartmentReportPrintModalProp
             </table>
           </div>
 
-          {/* Signature Block */}
-          <div className="pt-10 grid grid-cols-3 gap-8 text-center text-xs page-break-inside-avoid">
-            <div className="space-y-16">
+          {/* Signature Block (Compact & Guaranteed to fit on print) */}
+          <div className="pt-6 grid grid-cols-3 gap-6 text-center text-[11px] page-break-inside-avoid">
+            <div className="space-y-12">
               <div>
                 <p className="font-semibold text-neutral-800">Disetujui Oleh,</p>
                 <p className="text-[10px] text-neutral-600 font-mono">Direktur Operasional</p>
               </div>
               <div className="font-bold underline text-neutral-900">Ir. Andi Hartono</div>
             </div>
-            <div className="space-y-16">
+            <div className="space-y-12">
               <div>
                 <p className="font-semibold text-neutral-800">Diketahui Oleh,</p>
                 <p className="text-[10px] text-neutral-600 font-mono">Kepala Pabrik (Plant Head)</p>
               </div>
               <div className="font-bold underline text-neutral-900">Dedi Setiawan, ST</div>
             </div>
-            <div className="space-y-16">
+            <div className="space-y-12">
               <div>
                 <p className="font-semibold text-neutral-800">Dilaporkan Oleh,</p>
                 <p className="text-[10px] text-neutral-600 font-mono">Kepala {departmentMeta.label}</p>
