@@ -41,7 +41,7 @@ export const DepartmentReportPrintModal: React.FC<DepartmentReportPrintModalProp
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto">
       {/* Container A4 standard berlatar putih bersih dengan teks hitam tegas */}
-      <div className="bg-white text-neutral-900 rounded-3xl border border-neutral-300 w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+      <div className="print-report-container bg-white text-neutral-900 rounded-3xl border border-neutral-300 w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
         
         {/* Modal Toolbar Header & Pagination Controls (Hidden when printing) */}
         <div className="p-4 sm:p-5 border-b border-neutral-200 flex flex-wrap items-center justify-between gap-3 print:hidden bg-neutral-100">
